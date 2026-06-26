@@ -636,6 +636,30 @@ function initProductsEnhancements() {
     const checkoutFormMessage = document.getElementById('checkout-form-message');
     let activeCheckoutItems = [];
 
+    function enforcePhoneInput() {
+        if (!checkoutPhoneInput) return;
+
+        const prefix = '+91 ';
+        checkoutPhoneInput.setAttribute('type', 'tel');
+        checkoutPhoneInput.setAttribute('inputmode', 'numeric');
+        checkoutPhoneInput.setAttribute('placeholder', `${prefix}9876543210`);
+        checkoutPhoneInput.setAttribute('maxlength', '14');
+
+        const applyPhoneValue = () => {
+            const digits = (checkoutPhoneInput.value.replace(/\D/g, '').slice(2) || '').slice(0, 10);
+            checkoutPhoneInput.value = digits ? `${prefix}${digits}` : prefix;
+        };
+
+        checkoutPhoneInput.addEventListener('input', applyPhoneValue);
+        checkoutPhoneInput.addEventListener('focus', function () {
+            if (!checkoutPhoneInput.value || checkoutPhoneInput.value === prefix) {
+                checkoutPhoneInput.value = prefix;
+            }
+        });
+        checkoutPhoneInput.addEventListener('blur', applyPhoneValue);
+        checkoutPhoneInput.value = prefix;
+    }
+
     function formatINR(value) {
         const num = Number(value) || 0;
         return '₹' + num.toLocaleString('en-IN');
@@ -716,6 +740,8 @@ function initProductsEnhancements() {
     }
 
     if (checkoutModal) {
+        enforcePhoneInput();
+
         checkoutModal.querySelectorAll('[data-close-checkout]').forEach((closeEl) => {
             closeEl.addEventListener('click', closeCheckoutModal);
         });
