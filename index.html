@@ -23,6 +23,9 @@
     
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- GSAP Animation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     
     <!-- Main Stylesheet -->
     <link rel="stylesheet" href="css/style.css">
@@ -95,45 +98,66 @@
         <div class="hero-overlay"></div>
         <div class="container">
             <div class="hero-content">
-                <!-- TODO: Add hero background video here if needed -->
-                <!-- <video class="hero-video" autoplay muted loop playsinline>
-                    <source src="videos/hero-video.mp4" type="video/mp4">
-                </video> -->
-                
-                <div class="hero-text">
-                    <h1 class="hero-title">
-                        <span class="hero-brand" data-en="NUTRITION HAVELI" data-hi="नेशन हैवली">NUTRITION HAVELI</span>
-                    </h1>
-                    <p class="hero-subtitle" data-en="Your Trusted Fitness Supplement Partner" data-hi="आपका भरोसेमंद फिटनेस सप्लीमेंट पार्टनर">Your Trusted Fitness Supplement Partner</p>
-                    <div class="hero-cta">
-                        <a href="https://wa.me/919827676474" class="btn btn-primary btn-whatsapp" target="_blank">
-                            <i class="fab fa-whatsapp"></i>
-                            <span data-en="Order on WhatsApp" data-hi="व्हाट्सएप पर ऑर्डर करें">Order on WhatsApp</span>
-                        </a>
-                        <a href="#products" class="btn btn-secondary">
-                            <span data-en="View Products" data-hi="प्रोडक्ट्स देखें">View Products</span>
-                        </a>
+                <div class="hero-stage">
+                    <div class="hero-left">
+                        <!-- TODO: Add hero background video here if needed -->
+                        <!-- <video class="hero-video" autoplay muted loop playsinline>
+                            <source src="videos/hero-video.mp4" type="video/mp4">
+                        </video> -->
+
+                        <div class="hero-text" data-hero-brand>
+                            <h1 class="hero-title">
+                                <span class="hero-brand">
+                                    <span class="hero-brand" data-en="NUTRITION HAVELI" data-hi="नेशन हैवली">NUTRITION HAVELI</span>
+                                </span>
+                            </h1>
+                            <p class="hero-subtitle" data-en="Your Trusted Fitness Supplement Partner" data-hi="आपका भरोसेमंद फिटनेस सप्लीमेंट पार्टनर">Your Trusted Fitness Supplement Partner</p>
+
+                            <div class="hero-cta">
+                                <a href="#products" class="btn btn-secondary hero-view-products" aria-label="View Products">
+                                    <span data-en="View Products" data-hi="प्रोडक्ट्स देखें">View Products</span>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Hero Stats -->
+                        <div class="hero-stats">
+                            <div class="stat-item">
+                                <span class="stat-number">100%</span>
+                                <span class="stat-label" data-en="Genuine Products" data-hi="असली प्रोडक्ट्स">Genuine Products</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">24×7</span>
+                                <span class="stat-label" data-en="Available" data-hi="उपलब्ध">Available</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">All India</span>
+                                <span class="stat-label" data-en="Delivery" data-hi="डिलीवरी">Delivery</span>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                
-                <!-- Hero Stats -->
-                <div class="hero-stats">
-                    <div class="stat-item">
-                        <span class="stat-number">100%</span>
-                        <span class="stat-label" data-en="Genuine Products" data-hi="असली प्रोडक्ट्स">Genuine Products</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number">24×7</span>
-                        <span class="stat-label" data-en="Available" data-hi="उपलब्ध">Available</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number">All India</span>
-                        <span class="stat-label" data-en="Delivery" data-hi="डिलीवरी">Delivery</span>
+
+                    <!-- Hero right: 3D generic supplement product image container (background-free) -->
+                    <div class="hero-right">
+                        <div class="hero-jar-wrap" aria-hidden="true">
+                            <div class="hero-jar" id="hero-jar">
+                                <!-- If you have a PNG/SVG jar image with transparent background, replace src below -->
+                                <img
+                                    class="hero-jar-image"
+                                    src="images/hero-jar.png"
+                                    alt="Supplement Jar"
+                                    onerror="this.style.display='none'; document.getElementById('hero-jar-placeholder')?.classList.add('show');"/>
+                                <div id="hero-jar-placeholder" class="hero-jar-placeholder">
+                                    <div class="jar-shape"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
+
 
     <!-- ============================================
          WHY CHOOSE US SECTION
@@ -532,6 +556,11 @@
     <button class="back-to-top" id="back-to-top" aria-label="Back to Top">
         <i class="fas fa-arrow-up"></i>
     </button>
+
+    <!-- ============================================
+         GSAP (GreenSock) - CDN
+         ============================================ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 
     <!-- JavaScript Files -->
     <script src="js/main.js"></script>
