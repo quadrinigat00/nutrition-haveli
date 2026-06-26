@@ -944,9 +944,20 @@ p:last-child {
     transition: var(--transition-normal);
 }
 
-.guarantee-card:hover {
+.guarantee-card.clickable-card {
+    cursor: pointer;
+}
+
+.guarantee-card:hover,
+.guarantee-card.active {
     border-color: rgba(37, 211, 102, 0.3);
     box-shadow: 0 0 30px rgba(37, 211, 102, 0.1);
+    transform: translateY(-4px);
+}
+
+.guarantee-card:focus-visible {
+    outline: 2px solid var(--color-accent-blue);
+    outline-offset: 3px;
 }
 
 .guarantee-icon {
@@ -971,6 +982,24 @@ p:last-child {
 .guarantee-text {
     color: var(--color-text-secondary);
     font-size: 0.95rem;
+    margin-bottom: 0;
+}
+
+.guarantee-detail {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    margin-top: 0;
+    color: var(--color-text-secondary);
+    font-size: 0.92rem;
+    line-height: 1.6;
+    transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+}
+
+.guarantee-card.active .guarantee-detail {
+    max-height: 120px;
+    opacity: 1;
+    margin-top: var(--spacing-sm);
 }
 
 /* ============================================
@@ -996,9 +1025,20 @@ p:last-child {
     transition: var(--transition-normal);
 }
 
-.delivery-card:hover {
+.delivery-card.clickable-card {
+    cursor: pointer;
+}
+
+.delivery-card:hover,
+.delivery-card.active {
     border-color: rgba(230, 57, 70, 0.3);
     box-shadow: var(--shadow-glow-red);
+    transform: translateY(-4px);
+}
+
+.delivery-card:focus-visible {
+    outline: 2px solid var(--color-accent-blue);
+    outline-offset: 3px;
 }
 
 .delivery-icon {
@@ -1023,7 +1063,24 @@ p:last-child {
 .delivery-text {
     color: var(--color-text-secondary);
     font-size: 0.95rem;
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-sm);
+}
+
+.delivery-detail {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    margin-top: 0;
+    color: var(--color-text-secondary);
+    font-size: 0.92rem;
+    line-height: 1.6;
+    transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+}
+
+.delivery-card.active .delivery-detail {
+    max-height: 120px;
+    opacity: 1;
+    margin-top: var(--spacing-sm);
 }
 
 .delivery-features {
@@ -1281,10 +1338,19 @@ p:last-child {
 /* ============================================
    FIXED BUTTONS
    ============================================ */
+.floating-action-group {
+    position: fixed;
+    right: 30px;
+    bottom: 30px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 999;
+}
+
 .fixed-whatsapp,
 .fixed-call {
-    position: fixed;
-    bottom: 30px;
+    position: relative;
     width: 60px;
     height: 60px;
     border-radius: var(--radius-round);
@@ -1293,28 +1359,25 @@ p:last-child {
     justify-content: center;
     font-size: 1.75rem;
     color: var(--color-white);
-    z-index: 999;
     box-shadow: var(--shadow-lg);
     transition: var(--transition-normal);
 }
 
 .fixed-whatsapp {
-    right: 30px;
     background: #25D366;
 }
 
 .fixed-whatsapp:hover {
-    transform: scale(1.1);
+    transform: scale(1.08);
     box-shadow: 0 0 30px rgba(37, 211, 102, 0.5);
 }
 
 .fixed-call {
-    right: 100px;
     background: linear-gradient(135deg, var(--color-accent-red), var(--color-accent-red-dark));
 }
 
 .fixed-call:hover {
-    transform: scale(1.1);
+    transform: scale(1.08);
     box-shadow: 0 0 30px rgba(230, 57, 70, 0.5);
 }
 

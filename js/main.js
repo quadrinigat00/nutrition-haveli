@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initLazyLoading();
     initHeroCinematicAnimation();
     initProductsEnhancements();
+    initInteractiveCards();
 });
 
 
@@ -608,6 +609,60 @@ function initHeroCinematicAnimation() {
     return tl;
 }
 
+
+/* ============================================
+   INTERACTIVE CARD TOGGLE ENHANCEMENTS
+   ============================================ */
+function initInteractiveCards() {
+    const guaranteeCards = Array.from(document.querySelectorAll('#guarantees .guarantee-card'));
+    guaranteeCards.forEach((card) => {
+        card.classList.add('clickable-card');
+        card.style.cursor = 'pointer';
+
+        card.addEventListener('click', function (event) {
+            if (event.target.closest('a, button')) return;
+
+            const shouldActivate = !card.classList.contains('active');
+            guaranteeCards.forEach((item) => {
+                item.classList.remove('active');
+                item.setAttribute('aria-expanded', 'false');
+            });
+
+            if (shouldActivate) {
+                card.classList.add('active');
+                card.setAttribute('aria-expanded', 'true');
+            }
+        });
+
+        card.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                card.click();
+            }
+        });
+    });
+
+    const deliveryCard = document.querySelector('#delivery .delivery-card');
+    if (deliveryCard) {
+        deliveryCard.classList.add('clickable-card');
+        deliveryCard.style.cursor = 'pointer';
+
+        deliveryCard.addEventListener('click', function (event) {
+            if (event.target.closest('a, button')) return;
+
+            const shouldActivate = !deliveryCard.classList.contains('active');
+            deliveryCard.classList.toggle('active', shouldActivate);
+            deliveryCard.setAttribute('aria-expanded', String(shouldActivate));
+        });
+
+        deliveryCard.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                deliveryCard.click();
+            }
+        });
+    }
+}
 
 /* ============================================
    PRODUCTS UI ENHANCEMENTS

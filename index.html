@@ -324,21 +324,23 @@
             
             <div class="guarantees-grid">
                 <!-- Guarantee 1 -->
-                <div class="guarantee-card">
+                <div class="guarantee-card" tabindex="0" role="button" aria-expanded="false">
                     <div class="guarantee-icon">
                         <i class="fas fa-check-circle"></i>
                     </div>
                     <h3 class="guarantee-title" data-en="100% Genuine Products" data-hhi="100% असली प्रोडक्ट्स">100% Genuine Products</h3>
                     <p class="guarantee-text" data-en="Every product is 100% authentic with manufacturer seal" data-hi="हर प्रोडक्ट्स 100% असली है जिस पर मैन्युफैक्चरर की सील है">Every product is 100% authentic with manufacturer seal</p>
+                    <p class="guarantee-detail" data-en="We verify every batch and supplier so you receive only authentic supplements that match the labels and promises." data-hi="हम हर बैच और सप्लायर की पुष्टि करते हैं ताकि आपको केवल असली सप्लीमेंट मिलें जो लेबल और वादों के अनुरूप हों।">We verify every batch and supplier so you receive only authentic supplements that match the labels and promises.</p>
                 </div>
                 
                 <!-- Guarantee 2 -->
-                <div class="guarantee-card">
+                <div class="guarantee-card" tabindex="0" role="button" aria-expanded="false">
                     <div class="guarantee-icon">
-                        <i class="fas fa-seal"></i>
+                        <i class="fas fa-box"></i>
                     </div>
                     <h3 class="guarantee-title" data-en="Sealed Pack Guarantee" data-hi="सील पैक गारंटी">Sealed Pack Guarantee</h3>
                     <p class="guarantee-text" data-en="All products delivered in factory-sealed packaging" data-hi="सभी प्रोडक्ट्स फैक्ट्री सील पैकेजिंग में डिलीवर किए जाते हैं">All products delivered in factory-sealed packaging</p>
+                    <p class="guarantee-detail" data-en="Every order is packed and sealed at source, keeping your products protected and authentic until they reach your doorstep." data-hi="हर ऑर्डर को स्रोत पर पैक और सील किया जाता है, ताकि आपके प्रोडक्ट्स आपके दरवाजे तक पहुंचने तक सुरक्षित और असली रहें।">Every order is packed and sealed at source, keeping your products protected and authentic until they reach your doorstep.</p>
                 </div>
             </div>
         </div>
@@ -356,16 +358,13 @@
             
             <div class="delivery-grid">
                 <!-- WhatsApp Order -->
-                <div class="delivery-card">
+                <div class="delivery-card" tabindex="0" role="button" aria-expanded="false">
                     <div class="delivery-icon">
                         <i class="fab fa-whatsapp"></i>
                     </div>
                     <h3 class="delivery-title" data-en="WhatsApp Order" data-hi="व्हाट्सएप ऑर्डर">WhatsApp Order</h3>
                     <p class="delivery-text" data-en="Simply send us a message on WhatsApp to place your order" data-hi="अपना ऑर्डर देने के लिए बस हमें व्हाट्सएप पर मैसेज करें">Simply send us a message on WhatsApp to place your order</p>
-                    <a href="https://wa.me/919827676474" class="btn btn-whatsapp" target="_blank">
-                        <i class="fab fa-whatsapp"></i>
-                        <span data-en="Order on WhatsApp" data-hi="व्हाट्सएप पर ऑर्डर करें">Order on WhatsApp</span>
-                    </a>
+                    <p class="delivery-detail" data-en="Tap this card to reveal the quickest way to place your order and get instant support from our team for your supplement needs." data-hi="इस कार्ड पर टैप करें ताकि आपके सप्लीमेंट की जरूरतों के लिए ऑर्डर देने और हमारी टीम से तुरंत सहायता पाने का सबसे तेज़ तरीका दिखे।">Tap this card to reveal the quickest way to place your order and get instant support from our team for your supplement needs.</p>
                 </div>
                 
                 <!-- All India Delivery -->
@@ -383,10 +382,6 @@
                         <div class="delivery-feature">
                             <i class="fas fa-box"></i>
                             <span data-en="Secure Packaging" data-hi="सुरक्षित पैकेजिंग">Secure Packaging</span>
-                        </div>
-                        <div class="delivery-feature">
-                            <i class="fas fa-money-back"></i>
-                            <span data-en="Cash on Delivery" data-hi="कैश ऑन डिलीवरी">Cash on Delivery</span>
                         </div>
                     </div>
                 </div>
@@ -535,20 +530,19 @@
     </footer>
 
     <!-- ============================================
-         FIXED WHATSAPP BUTTON
+         FIXED ACTION BUTTONS
          ============================================ -->
-    <a href="https://wa.me/919827676474" class="fixed-whatsapp" id="fixed-whatsapp" target="_blank" aria-label="Order on WhatsApp">
-        <i class="fab fa-whatsapp"></i>
-        <span class="whatsapp-tooltip" data-en="Order on WhatsApp" data-hi="व्हाट्सएप पर ऑर्डर करें">Order on WhatsApp</span>
-    </a>
+    <div class="floating-action-group">
+        <a href="https://wa.me/919827676474" class="fixed-whatsapp" id="fixed-whatsapp" target="_blank" aria-label="Order on WhatsApp">
+            <i class="fab fa-whatsapp"></i>
+            <span class="whatsapp-tooltip" data-en="Order on WhatsApp" data-hi="व्हाट्सएप पर ऑर्डर करें">Order on WhatsApp</span>
+        </a>
 
-    <!-- ============================================
-         FIXED CALL BUTTON
-         ============================================ -->
-    <a href="tel:+919827676474" class="fixed-call" id="fixed-call" aria-label="Call Now">
-        <i class="fas fa-phone-alt"></i>
-        <span class="call-tooltip" data-en="Call Now" data-hi="अभी कॉल करें">Call Now</span>
-    </a>
+        <a href="tel:+919827676474" class="fixed-call" id="fixed-call" aria-label="Call Now">
+            <i class="fas fa-phone-alt"></i>
+            <span class="call-tooltip" data-en="Call Now" data-hi="अभी कॉल करें">Call Now</span>
+        </a>
+    </div>
 
     <!-- ============================================
          BACK TO TOP BUTTON
@@ -1350,9 +1344,20 @@ p:last-child {
     transition: var(--transition-normal);
 }
 
-.guarantee-card:hover {
+.guarantee-card.clickable-card {
+    cursor: pointer;
+}
+
+.guarantee-card:hover,
+.guarantee-card.active {
     border-color: rgba(37, 211, 102, 0.3);
     box-shadow: 0 0 30px rgba(37, 211, 102, 0.1);
+    transform: translateY(-4px);
+}
+
+.guarantee-card:focus-visible {
+    outline: 2px solid var(--color-accent-blue);
+    outline-offset: 3px;
 }
 
 .guarantee-icon {
@@ -1377,6 +1382,24 @@ p:last-child {
 .guarantee-text {
     color: var(--color-text-secondary);
     font-size: 0.95rem;
+    margin-bottom: 0;
+}
+
+.guarantee-detail {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    margin-top: 0;
+    color: var(--color-text-secondary);
+    font-size: 0.92rem;
+    line-height: 1.6;
+    transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+}
+
+.guarantee-card.active .guarantee-detail {
+    max-height: 120px;
+    opacity: 1;
+    margin-top: var(--spacing-sm);
 }
 
 /* ============================================
@@ -1402,9 +1425,20 @@ p:last-child {
     transition: var(--transition-normal);
 }
 
-.delivery-card:hover {
+.delivery-card.clickable-card {
+    cursor: pointer;
+}
+
+.delivery-card:hover,
+.delivery-card.active {
     border-color: rgba(230, 57, 70, 0.3);
     box-shadow: var(--shadow-glow-red);
+    transform: translateY(-4px);
+}
+
+.delivery-card:focus-visible {
+    outline: 2px solid var(--color-accent-blue);
+    outline-offset: 3px;
 }
 
 .delivery-icon {
@@ -1429,7 +1463,24 @@ p:last-child {
 .delivery-text {
     color: var(--color-text-secondary);
     font-size: 0.95rem;
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-sm);
+}
+
+.delivery-detail {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    margin-top: 0;
+    color: var(--color-text-secondary);
+    font-size: 0.92rem;
+    line-height: 1.6;
+    transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+}
+
+.delivery-card.active .delivery-detail {
+    max-height: 120px;
+    opacity: 1;
+    margin-top: var(--spacing-sm);
 }
 
 .delivery-features {
@@ -1687,10 +1738,19 @@ p:last-child {
 /* ============================================
    FIXED BUTTONS
    ============================================ */
+.floating-action-group {
+    position: fixed;
+    right: 30px;
+    bottom: 30px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 999;
+}
+
 .fixed-whatsapp,
 .fixed-call {
-    position: fixed;
-    bottom: 30px;
+    position: relative;
     width: 60px;
     height: 60px;
     border-radius: var(--radius-round);
@@ -1699,28 +1759,25 @@ p:last-child {
     justify-content: center;
     font-size: 1.75rem;
     color: var(--color-white);
-    z-index: 999;
     box-shadow: var(--shadow-lg);
     transition: var(--transition-normal);
 }
 
 .fixed-whatsapp {
-    right: 30px;
     background: #25D366;
 }
 
 .fixed-whatsapp:hover {
-    transform: scale(1.1);
+    transform: scale(1.08);
     box-shadow: 0 0 30px rgba(37, 211, 102, 0.5);
 }
 
 .fixed-call {
-    right: 100px;
     background: linear-gradient(135deg, var(--color-accent-red), var(--color-accent-red-dark));
 }
 
 .fixed-call:hover {
-    transform: scale(1.1);
+    transform: scale(1.08);
     box-shadow: 0 0 30px rgba(230, 57, 70, 0.5);
 }
 
