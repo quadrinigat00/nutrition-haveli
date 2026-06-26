@@ -666,7 +666,7 @@ function initProductsEnhancements() {
     function updateHeaderBadges() {
         const cartBadge = document.querySelector('[data-cart-badge]');
         const wishlistBadge = document.querySelector('[data-wishlist-badge]');
-        const cartTotal = state.cart.reduce((sum, item) => sum + (item.qty || 1), 0);
+        const cartTotal = state.cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
         if (cartBadge) cartBadge.textContent = cartTotal;
         if (wishlistBadge) wishlistBadge.textContent = state.wishlist.length;
     }
@@ -686,9 +686,9 @@ function initProductsEnhancements() {
     function addItemToCart(productData) {
         const existing = state.cart.find((item) => item.key === productData.key);
         if (existing) {
-            existing.qty += 1;
+            existing.quantity = (existing.quantity || 1) + 1;
         } else {
-            state.cart.push({ ...productData, qty: 1 });
+            state.cart.push({ ...productData, quantity: 1 });
         }
 
         updateHeaderBadges();
@@ -1099,7 +1099,10 @@ function initProductsEnhancements() {
             orderBtn.className = 'ecommerce-order-btn';
             orderBtn.textContent = 'Order Now';
             orderBtn.addEventListener('click', function () {
-                const message = state.cart.map((item) => `${item.name} x${item.qty}`).join(', ');
+                const message = state.cart.map((item) => {
+                    const quantity = item.quantity || item.qty || 1;
+                    return `${item.name} x${quantity}`;
+                }).join(', ');
                 const url = `https://wa.me/919827676474?text=${encodeURIComponent(`Hello, I want to order: ${message || 'products'}`)}`;
                 window.open(url, '_blank', 'noopener,noreferrer');
             });
@@ -1124,8 +1127,8 @@ function initProductsEnhancements() {
                 const items = state.cart;
                 if (!items.length) {
                     const empty = document.createElement('div');
-                    empty.className = 'ecommerce-cart-item';
-                    empty.textContent = 'Your cart is empty.';
+                    empty.className = 'ecommerce-cart-item ecommerce-cart-empty';
+                    empty.textContent = 'Your cart is empty. Add some premium supplements to get started!';
                     cartList.appendChild(empty);
                 } else {
                     items.forEach((item, index) => {
@@ -1156,15 +1159,56 @@ function initProductsEnhancements() {
                         name.className = 'ecommerce-item-name';
                         name.textContent = item.name;
 
+                        const quantity = item.quantity || item.qty || 1;
                         const sub = document.createElement('div');
                         sub.className = 'ecommerce-item-sub';
-                        sub.textContent = `Qty ${item.qty} • ₹${(item.our * item.qty).toLocaleString('en-IN')}`;
+                        sub.textContent = `Qty ${quantity} • ₹${(item.our * quantity).toLocaleString('en-IN')}`;
 
                         meta.appendChild(name);
                         meta.appendChild(sub);
 
                         const actions = document.createElement('div');
                         actions.className = 'ecommerce-item-actions';
+
+                        const qtyControls = document.createElement('div');
+                        qtyControls.className = 'ecommerce-qty-controls';
+
+                        const minus = document.createElement('button');
+                        minus.type = 'button';
+                        minus.className = 'ecommerce-qty-btn ecommerce-qty-minus';
+                        minus.textContent = '-';
+                        minus.addEventListener('click', function () {
+                            const idx = state.cart.findIndex((entry) => entry.key === item.key);
+                            if (idx >= 0) {
+                                state.cart[idx].quantity = Math.max(0, (state.cart[idx].quantity || state.cart[idx].qty || 1) - 1);
+                                if (state.cart[idx].quantity < 1) {
+                                    state.cart.splice(idx, 1);
+                                }
+                            }
+                            updateHeaderBadges();
+                            updateSidebarUI();
+                        });
+
+                        const qtyValue = document.createElement('div');
+                        qtyValue.className = 'ecommerce-qty-value';
+                        qtyValue.textContent = quantity;
+
+                        const plus = document.createElement('button');
+                        plus.type = 'button';
+                        plus.className = 'ecommerce-qty-btn ecommerce-qty-plus';
+                        plus.textContent = '+';
+                        plus.addEventListener('click', function () {
+                            const idx = state.cart.findIndex((entry) => entry.key === item.key);
+                            if (idx >= 0) {
+                                state.cart[idx].quantity = (state.cart[idx].quantity || state.cart[idx].qty || 1) + 1;
+                            }
+                            updateHeaderBadges();
+                            updateSidebarUI();
+                        });
+
+                        qtyControls.appendChild(minus);
+                        qtyControls.appendChild(qtyValue);
+                        qtyControls.appendChild(plus);
 
                         const trash = document.createElement('button');
                         trash.type = 'button';
@@ -1183,6 +1227,7 @@ function initProductsEnhancements() {
                         itemBody.appendChild(serial);
                         itemBody.appendChild(thumb);
                         itemBody.appendChild(meta);
+                        actions.appendChild(qtyControls);
                         actions.appendChild(trash);
                         row.appendChild(itemBody);
                         row.appendChild(actions);
@@ -1191,8 +1236,10 @@ function initProductsEnhancements() {
                     });
                 }
 
-                const total = state.cart.reduce((sum, item) => sum + item.our * item.qty, 0);
+                const total = state.cart.reduce((sum, item) => sum + item.our * (item.quantity || 1), 0);
                 totalPrice.textContent = `₹${total.toLocaleString('en-IN')}`;
+                orderBtn.disabled = items.length === 0;
+                orderBtn.classList.toggle('disabled', items.length === 0);
             }
 
             function renderWishlist() {

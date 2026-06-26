@@ -2119,6 +2119,49 @@ body.hindi .logo-text-footer {
     transform: translateY(-1px);
 }
 
+.ecommerce-qty-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius-md);
+    padding: 4px;
+}
+
+.ecommerce-qty-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    background: rgba(255,255,255,0.08);
+    color: var(--color-white);
+    font-size: 1rem;
+    font-weight: 900;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-fast);
+}
+
+.ecommerce-qty-btn:hover {
+    background: rgba(255,255,255,0.16);
+}
+
+.ecommerce-qty-value {
+    min-width: 26px;
+    text-align: center;
+    color: var(--color-white);
+    font-weight: 800;
+}
+
+.ecommerce-order-btn.disabled,
+.ecommerce-order-btn:disabled {
+    background: rgba(255,255,255,0.08);
+    color: var(--color-text-secondary);
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
 .ecommerce-wishlist-item {
     display: flex;
     align-items: center;
