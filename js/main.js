@@ -625,6 +625,13 @@ function initProductsEnhancements() {
         wishlist: []
     });
 
+    const CART_TAB = 'my-cart';
+    const WISHLIST_TAB = 'my-wishlist';
+    let sidebarBridgeOpen = null;
+    let sidebarBridgeClose = null;
+    let sidebarBridgeSetTab = null;
+    let sidebarBridgeUpdateUI = null;
+
     const heartSvg = `
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path class="heart-outline" d="M12 21s-7.2-4.6-9.4-8.9C.8 8.7 2.4 5.6 5.6 5.1c1.7-.3 3.3.4 4.4 1.6 1.1-1.2 2.7-1.9 4.4-1.6 3.2.5 4.8 3.6 3 7-2.2 4.3-9.4 8.9-9.4 8.9z"/>
@@ -685,7 +692,9 @@ function initProductsEnhancements() {
         }
 
         updateHeaderBadges();
-        renderCart();
+        if (typeof updateSidebarUI === 'function') {
+            updateSidebarUI();
+        }
 
         const liveRegion = document.getElementById('cart-live-region') || ensureLiveRegion();
         liveRegion.textContent = `${productData.name} added to cart.`;
@@ -701,7 +710,9 @@ function initProductsEnhancements() {
 
         syncHeartButtons();
         updateHeaderBadges();
-        renderWishlist();
+        if (typeof updateSidebarUI === 'function') {
+            updateSidebarUI();
+        }
     }
 
     function ensureLiveRegion() {
@@ -723,42 +734,61 @@ function initProductsEnhancements() {
 
     function ensureHeaderTriggers() {
         const actions = document.querySelector('.header-actions');
-        if (!actions || actions.querySelector('[data-sidebar-cart]')) return;
+        if (!actions) return;
 
-        const cartBtn = document.createElement('button');
-        cartBtn.type = 'button';
-        cartBtn.className = 'header-icon-btn';
-        cartBtn.dataset.sidebarCart = 'true';
-        cartBtn.setAttribute('aria-label', 'Open cart');
-        cartBtn.innerHTML = '<i class="fas fa-shopping-cart"></i><span class="header-icon-badge" data-cart-badge>0</span>';
+        let cartBtn = actions.querySelector('[data-sidebar-cart]');
+        let wishlistBtn = actions.querySelector('[data-sidebar-wishlist]');
 
-        const wishlistBtn = document.createElement('button');
-        wishlistBtn.type = 'button';
-        wishlistBtn.className = 'header-icon-btn';
-        wishlistBtn.dataset.sidebarWishlist = 'true';
-        wishlistBtn.setAttribute('aria-label', 'Open wishlist');
-        wishlistBtn.innerHTML = '<i class="fas fa-heart"></i><span class="header-icon-badge" data-wishlist-badge>0</span>';
-
-        const mobileToggle = actions.querySelector('.mobile-menu-toggle');
-        if (mobileToggle) {
-            actions.insertBefore(cartBtn, mobileToggle);
-            actions.insertBefore(wishlistBtn, mobileToggle);
-        } else {
-            actions.appendChild(cartBtn);
-            actions.appendChild(wishlistBtn);
+        if (!cartBtn) {
+            cartBtn = document.createElement('button');
+            cartBtn.type = 'button';
+            cartBtn.className = 'header-icon-btn';
+            cartBtn.dataset.sidebarCart = 'true';
+            cartBtn.setAttribute('aria-label', 'Open cart');
+            cartBtn.innerHTML = '<i class="fas fa-shopping-cart"></i><span class="header-icon-badge" data-cart-badge>0</span>';
         }
 
-        cartBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            openSidebar(CART_TAB);
-        });
+        if (!wishlistBtn) {
+            wishlistBtn = document.createElement('button');
+            wishlistBtn.type = 'button';
+            wishlistBtn.className = 'header-icon-btn';
+            wishlistBtn.dataset.sidebarWishlist = 'true';
+            wishlistBtn.setAttribute('aria-label', 'Open wishlist');
+            wishlistBtn.innerHTML = '<i class="fas fa-heart"></i><span class="header-icon-badge" data-wishlist-badge>0</span>';
+        }
 
-        wishlistBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            openSidebar(WISHLIST_TAB);
-        });
+        if (!cartBtn.parentNode) {
+            const mobileToggle = actions.querySelector('.mobile-menu-toggle');
+            if (mobileToggle) {
+                actions.insertBefore(cartBtn, mobileToggle);
+                actions.insertBefore(wishlistBtn, mobileToggle);
+            } else {
+                actions.appendChild(cartBtn);
+                actions.appendChild(wishlistBtn);
+            }
+        }
+
+        if (!cartBtn.dataset.bound) {
+            cartBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (typeof sidebarBridgeOpen === 'function') {
+                    sidebarBridgeOpen(CART_TAB);
+                }
+            });
+            cartBtn.dataset.bound = 'true';
+        }
+
+        if (!wishlistBtn.dataset.bound) {
+            wishlistBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (typeof sidebarBridgeOpen === 'function') {
+                    sidebarBridgeOpen(WISHLIST_TAB);
+                }
+            });
+            wishlistBtn.dataset.bound = 'true';
+        }
 
         updateHeaderBadges();
     }
@@ -972,296 +1002,347 @@ function initProductsEnhancements() {
         }
     });
 
-    const CART_TAB = 'my-cart';
-    const WISHLIST_TAB = 'my-wishlist';
     let activeTab = CART_TAB;
 
     function ensureSidebarUI() {
-        if (document.querySelector('.ecommerce-sidebar')) return;
+        let overlay = document.querySelector('.ecommerce-sidebar-overlay');
+        let sidebar = document.querySelector('.ecommerce-sidebar');
 
-        const overlay = document.createElement('div');
-        overlay.className = 'ecommerce-sidebar-overlay';
-        overlay.setAttribute('aria-hidden', 'true');
-        document.body.appendChild(overlay);
-
-        const sidebar = document.createElement('aside');
-        sidebar.className = 'ecommerce-sidebar';
-        sidebar.setAttribute('role', 'dialog');
-        sidebar.setAttribute('aria-modal', 'true');
-        sidebar.setAttribute('aria-label', 'Shopping cart and wishlist');
-        document.body.appendChild(sidebar);
-
-        const header = document.createElement('div');
-        header.className = 'ecommerce-sidebar-header';
-
-        const title = document.createElement('div');
-        title.className = 'ecommerce-sidebar-title';
-        title.textContent = 'Your Items';
-
-        const closeBtnSidebar = document.createElement('button');
-        closeBtnSidebar.type = 'button';
-        closeBtnSidebar.className = 'ecommerce-sidebar-close';
-        closeBtnSidebar.setAttribute('aria-label', 'Close');
-        closeBtnSidebar.textContent = 'X';
-
-        header.appendChild(title);
-        header.appendChild(closeBtnSidebar);
-
-        const body = document.createElement('div');
-        body.className = 'ecommerce-sidebar-body';
-
-        const tabs = document.createElement('div');
-        tabs.className = 'ecommerce-tabs';
-
-        const tabCart = document.createElement('button');
-        tabCart.type = 'button';
-        tabCart.className = 'ecommerce-tab active';
-        tabCart.dataset.tab = CART_TAB;
-        tabCart.textContent = 'My Cart';
-
-        const tabWishlist = document.createElement('button');
-        tabWishlist.type = 'button';
-        tabWishlist.className = 'ecommerce-tab';
-        tabWishlist.dataset.tab = WISHLIST_TAB;
-        tabWishlist.textContent = 'My Wishlist';
-
-        tabs.appendChild(tabCart);
-        tabs.appendChild(tabWishlist);
-
-        const cartPanel = document.createElement('section');
-        cartPanel.className = 'ecommerce-tab-panel';
-        cartPanel.dataset.panel = CART_TAB;
-
-        const cartList = document.createElement('div');
-        cartList.className = 'ecommerce-list';
-
-        const wishlistPanel = document.createElement('section');
-        wishlistPanel.className = 'ecommerce-tab-panel';
-        wishlistPanel.dataset.panel = WISHLIST_TAB;
-        wishlistPanel.style.display = 'none';
-
-        const wishList = document.createElement('div');
-        wishList.className = 'ecommerce-list';
-
-        const cartFooter = document.createElement('div');
-        cartFooter.className = 'ecommerce-cart-footer';
-        const cartFooterInner = document.createElement('div');
-        cartFooterInner.className = 'ecommerce-cart-footer-inner';
-
-        const totalLabel = document.createElement('div');
-        totalLabel.className = 'ecommerce-total-label';
-
-        const totalTitle = document.createElement('div');
-        totalTitle.className = 'ecommerce-total-title';
-        totalTitle.textContent = 'Total Price:';
-
-        const totalPrice = document.createElement('div');
-        totalPrice.className = 'ecommerce-total-price';
-        totalPrice.textContent = '₹ 0';
-
-        totalLabel.appendChild(totalTitle);
-        totalLabel.appendChild(totalPrice);
-
-        const orderBtn = document.createElement('button');
-        orderBtn.type = 'button';
-        orderBtn.className = 'ecommerce-order-btn';
-        orderBtn.textContent = 'Order Now';
-        orderBtn.addEventListener('click', function () {
-            const message = state.cart.map((item) => `${item.name} x${item.qty}`).join(', ');
-            const url = `https://wa.me/919827676474?text=${encodeURIComponent(`Hello, I want to order: ${message || 'products'}`)}`;
-            window.open(url, '_blank', 'noopener,noreferrer');
-        });
-
-        cartFooterInner.appendChild(totalLabel);
-        cartFooterInner.appendChild(orderBtn);
-        cartFooter.appendChild(cartFooterInner);
-
-        cartPanel.appendChild(cartList);
-        cartPanel.appendChild(cartFooter);
-        wishlistPanel.appendChild(wishList);
-
-        body.appendChild(tabs);
-        body.appendChild(cartPanel);
-        body.appendChild(wishlistPanel);
-
-        sidebar.appendChild(header);
-        sidebar.appendChild(body);
-
-        function renderCart() {
-            cartList.innerHTML = '';
-            const items = state.cart;
-            if (!items.length) {
-                const empty = document.createElement('div');
-                empty.className = 'ecommerce-cart-item';
-                empty.textContent = 'Your cart is empty.';
-                cartList.appendChild(empty);
-            } else {
-                items.forEach((item) => {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'ecommerce-cart-item';
-
-                    const row = document.createElement('div');
-                    row.className = 'ecommerce-cart-row';
-
-                    const meta = document.createElement('div');
-                    meta.className = 'ecommerce-cart-meta';
-
-                    const name = document.createElement('div');
-                    name.className = 'ecommerce-item-name';
-                    name.textContent = item.name;
-
-                    const sub = document.createElement('div');
-                    sub.className = 'ecommerce-item-sub';
-                    sub.textContent = `Qty ${item.qty} • ₹${(item.our * item.qty).toLocaleString('en-IN')}`;
-
-                    meta.appendChild(name);
-                    meta.appendChild(sub);
-
-                    const trash = document.createElement('button');
-                    trash.type = 'button';
-                    trash.className = 'ecommerce-trash-btn';
-                    trash.setAttribute('aria-label', `Remove ${item.name}`);
-                    trash.innerHTML = '<i class="fas fa-trash"></i>';
-                    trash.addEventListener('click', function () {
-                        const idx = state.cart.findIndex((entry) => entry.key === item.key);
-                        if (idx >= 0) {
-                            state.cart.splice(idx, 1);
-                        }
-                        updateHeaderBadges();
-                        renderCart();
-                    });
-
-                    row.appendChild(meta);
-                    row.appendChild(trash);
-                    wrapper.appendChild(row);
-                    cartList.appendChild(wrapper);
-                });
-            }
-
-            const total = state.cart.reduce((sum, item) => sum + item.our * item.qty, 0);
-            totalPrice.textContent = `₹${total.toLocaleString('en-IN')}`;
-        }
-
-        function renderWishlist() {
-            wishList.innerHTML = '';
-            const items = state.wishlist;
-            if (!items.length) {
-                const empty = document.createElement('div');
-                empty.className = 'ecommerce-wishlist-item';
-                empty.textContent = 'Your wishlist is empty.';
-                wishList.appendChild(empty);
-            } else {
-                items.forEach((item) => {
-                    const wItem = document.createElement('div');
-                    wItem.className = 'ecommerce-wishlist-item';
-
-                    const meta = document.createElement('div');
-                    meta.className = 'ecommerce-wishlist-meta';
-
-                    const name = document.createElement('div');
-                    name.className = 'ecommerce-item-name';
-                    name.textContent = item.name;
-
-                    const sub = document.createElement('div');
-                    sub.className = 'ecommerce-item-sub';
-                    sub.textContent = `₹${item.our.toLocaleString('en-IN')} • Loved item`;
-
-                    meta.appendChild(name);
-                    meta.appendChild(sub);
-
-                    const actions = document.createElement('div');
-                    actions.className = 'ecommerce-wish-actions';
-
-                    const addBtn = document.createElement('button');
-                    addBtn.type = 'button';
-                    addBtn.className = 'ecommerce-wish-add-to-cart';
-                    addBtn.textContent = 'Add to Cart';
-                    addBtn.addEventListener('click', function () {
-                        addItemToCart(item);
-                    });
-
-                    const removeBtn = document.createElement('button');
-                    removeBtn.type = 'button';
-                    removeBtn.className = 'ecommerce-wish-remove';
-                    removeBtn.setAttribute('aria-label', `Remove ${item.name}`);
-                    removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-                    removeBtn.addEventListener('click', function () {
-                        const idx = state.wishlist.findIndex((entry) => entry.key === item.key);
-                        if (idx >= 0) {
-                            state.wishlist.splice(idx, 1);
-                        }
-                        syncHeartButtons();
-                        updateHeaderBadges();
-                        renderWishlist();
-                    });
-
-                    actions.appendChild(addBtn);
-                    actions.appendChild(removeBtn);
-                    wItem.appendChild(meta);
-                    wItem.appendChild(actions);
-                    wishList.appendChild(wItem);
-                });
-            }
-        }
-
-        function setTab(tabKey) {
-            activeTab = tabKey;
-            tabCart.classList.toggle('active', tabKey === CART_TAB);
-            tabWishlist.classList.toggle('active', tabKey === WISHLIST_TAB);
-            cartPanel.style.display = tabKey === CART_TAB ? '' : 'none';
-            wishlistPanel.style.display = tabKey === WISHLIST_TAB ? '' : 'none';
-            title.textContent = tabKey === CART_TAB ? 'My Cart' : 'My Wishlist';
-        }
-
-        let lastFocusSidebar = null;
-        function openSidebar(tabKey) {
-            lastFocusSidebar = document.activeElement;
-            overlay.classList.add('active');
-            sidebar.classList.add('open');
-            document.body.style.overflow = 'hidden';
-            setTab(tabKey);
-            closeBtnSidebar.focus();
-            overlay.setAttribute('aria-hidden', 'false');
-        }
-
-        function closeSidebar() {
-            overlay.classList.remove('active');
-            sidebar.classList.remove('open');
-            document.body.style.overflow = '';
+        if (!overlay || !sidebar) {
+            overlay = document.createElement('div');
+            overlay.className = 'ecommerce-sidebar-overlay';
             overlay.setAttribute('aria-hidden', 'true');
-            if (lastFocusSidebar && typeof lastFocusSidebar.focus === 'function') {
-                lastFocusSidebar.focus();
-            }
+            document.body.appendChild(overlay);
+
+            sidebar = document.createElement('aside');
+            sidebar.className = 'ecommerce-sidebar';
+            sidebar.setAttribute('role', 'dialog');
+            sidebar.setAttribute('aria-modal', 'true');
+            sidebar.setAttribute('aria-label', 'Shopping cart and wishlist');
+            document.body.appendChild(sidebar);
         }
 
-        tabCart.addEventListener('click', function () {
-            setTab(CART_TAB);
-        });
+        if (!sidebar.querySelector('.ecommerce-sidebar-header')) {
+            const header = document.createElement('div');
+            header.className = 'ecommerce-sidebar-header';
 
-        tabWishlist.addEventListener('click', function () {
-            setTab(WISHLIST_TAB);
-        });
+            const title = document.createElement('div');
+            title.className = 'ecommerce-sidebar-title';
+            title.textContent = 'My Cart';
 
-        closeBtnSidebar.addEventListener('click', function (e) {
-            e.stopPropagation();
-            closeSidebar();
-        });
+            const closeBtnSidebar = document.createElement('button');
+            closeBtnSidebar.type = 'button';
+            closeBtnSidebar.className = 'ecommerce-sidebar-close';
+            closeBtnSidebar.setAttribute('aria-label', 'Close');
+            closeBtnSidebar.innerHTML = '&times;';
 
-        overlay.addEventListener('click', function () {
-            closeSidebar();
-        });
+            header.appendChild(title);
+            header.appendChild(closeBtnSidebar);
 
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape' && sidebar.classList.contains('open')) {
-                closeSidebar();
+            const body = document.createElement('div');
+            body.className = 'ecommerce-sidebar-body';
+
+            const tabs = document.createElement('div');
+            tabs.className = 'ecommerce-tabs';
+
+            const tabCart = document.createElement('button');
+            tabCart.type = 'button';
+            tabCart.className = 'ecommerce-tab active';
+            tabCart.dataset.tab = CART_TAB;
+            tabCart.textContent = 'My Cart';
+
+            const tabWishlist = document.createElement('button');
+            tabWishlist.type = 'button';
+            tabWishlist.className = 'ecommerce-tab';
+            tabWishlist.dataset.tab = WISHLIST_TAB;
+            tabWishlist.textContent = 'My Wishlist';
+
+            tabs.appendChild(tabCart);
+            tabs.appendChild(tabWishlist);
+
+            const cartPanel = document.createElement('section');
+            cartPanel.className = 'ecommerce-tab-panel';
+            cartPanel.dataset.panel = CART_TAB;
+
+            const cartList = document.createElement('div');
+            cartList.className = 'ecommerce-list';
+
+            const wishlistPanel = document.createElement('section');
+            wishlistPanel.className = 'ecommerce-tab-panel';
+            wishlistPanel.dataset.panel = WISHLIST_TAB;
+            wishlistPanel.style.display = 'none';
+
+            const wishList = document.createElement('div');
+            wishList.className = 'ecommerce-list';
+
+            const cartFooter = document.createElement('div');
+            cartFooter.className = 'ecommerce-cart-footer';
+            const cartFooterInner = document.createElement('div');
+            cartFooterInner.className = 'ecommerce-cart-footer-inner';
+
+            const totalLabel = document.createElement('div');
+            totalLabel.className = 'ecommerce-total-label';
+
+            const totalTitle = document.createElement('div');
+            totalTitle.className = 'ecommerce-total-title';
+            totalTitle.textContent = 'Total Price:';
+
+            const totalPrice = document.createElement('div');
+            totalPrice.className = 'ecommerce-total-price';
+            totalPrice.textContent = '₹ 0';
+
+            totalLabel.appendChild(totalTitle);
+            totalLabel.appendChild(totalPrice);
+
+            const orderBtn = document.createElement('button');
+            orderBtn.type = 'button';
+            orderBtn.className = 'ecommerce-order-btn';
+            orderBtn.textContent = 'Order Now';
+            orderBtn.addEventListener('click', function () {
+                const message = state.cart.map((item) => `${item.name} x${item.qty}`).join(', ');
+                const url = `https://wa.me/919827676474?text=${encodeURIComponent(`Hello, I want to order: ${message || 'products'}`)}`;
+                window.open(url, '_blank', 'noopener,noreferrer');
+            });
+
+            cartFooterInner.appendChild(totalLabel);
+            cartFooterInner.appendChild(orderBtn);
+            cartFooter.appendChild(cartFooterInner);
+
+            cartPanel.appendChild(cartList);
+            cartPanel.appendChild(cartFooter);
+            wishlistPanel.appendChild(wishList);
+
+            body.appendChild(tabs);
+            body.appendChild(cartPanel);
+            body.appendChild(wishlistPanel);
+
+            sidebar.appendChild(header);
+            sidebar.appendChild(body);
+
+            function renderCart() {
+                cartList.innerHTML = '';
+                const items = state.cart;
+                if (!items.length) {
+                    const empty = document.createElement('div');
+                    empty.className = 'ecommerce-cart-item';
+                    empty.textContent = 'Your cart is empty.';
+                    cartList.appendChild(empty);
+                } else {
+                    items.forEach((item, index) => {
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'ecommerce-cart-item';
+
+                        const row = document.createElement('div');
+                        row.className = 'ecommerce-cart-row';
+
+                        const itemBody = document.createElement('div');
+                        itemBody.className = 'ecommerce-item-body';
+
+                        const serial = document.createElement('div');
+                        serial.className = 'ecommerce-item-serial';
+                        serial.textContent = `${index + 1}.`;
+
+                        const thumb = document.createElement('div');
+                        thumb.className = 'ecommerce-item-thumb';
+                        const img = document.createElement('img');
+                        img.src = item.imgSrc || '';
+                        img.alt = item.imgAlt || item.name;
+                        thumb.appendChild(img);
+
+                        const meta = document.createElement('div');
+                        meta.className = 'ecommerce-cart-meta';
+
+                        const name = document.createElement('div');
+                        name.className = 'ecommerce-item-name';
+                        name.textContent = item.name;
+
+                        const sub = document.createElement('div');
+                        sub.className = 'ecommerce-item-sub';
+                        sub.textContent = `Qty ${item.qty} • ₹${(item.our * item.qty).toLocaleString('en-IN')}`;
+
+                        meta.appendChild(name);
+                        meta.appendChild(sub);
+
+                        const actions = document.createElement('div');
+                        actions.className = 'ecommerce-item-actions';
+
+                        const trash = document.createElement('button');
+                        trash.type = 'button';
+                        trash.className = 'ecommerce-trash-btn';
+                        trash.setAttribute('aria-label', `Remove ${item.name}`);
+                        trash.innerHTML = '<i class="fas fa-trash"></i>';
+                        trash.addEventListener('click', function () {
+                            const idx = state.cart.findIndex((entry) => entry.key === item.key);
+                            if (idx >= 0) {
+                                state.cart.splice(idx, 1);
+                            }
+                            updateHeaderBadges();
+                            updateSidebarUI();
+                        });
+
+                        itemBody.appendChild(serial);
+                        itemBody.appendChild(thumb);
+                        itemBody.appendChild(meta);
+                        actions.appendChild(trash);
+                        row.appendChild(itemBody);
+                        row.appendChild(actions);
+                        wrapper.appendChild(row);
+                        cartList.appendChild(wrapper);
+                    });
+                }
+
+                const total = state.cart.reduce((sum, item) => sum + item.our * item.qty, 0);
+                totalPrice.textContent = `₹${total.toLocaleString('en-IN')}`;
             }
-        });
+
+            function renderWishlist() {
+                wishList.innerHTML = '';
+                const items = state.wishlist;
+                if (!items.length) {
+                    const empty = document.createElement('div');
+                    empty.className = 'ecommerce-wishlist-item';
+                    empty.textContent = 'Your wishlist is empty.';
+                    wishList.appendChild(empty);
+                } else {
+                    items.forEach((item, index) => {
+                        const wItem = document.createElement('div');
+                        wItem.className = 'ecommerce-wishlist-item';
+
+                        const itemBody = document.createElement('div');
+                        itemBody.className = 'ecommerce-item-body';
+
+                        const serial = document.createElement('div');
+                        serial.className = 'ecommerce-item-serial';
+                        serial.textContent = `${index + 1}.`;
+
+                        const thumb = document.createElement('div');
+                        thumb.className = 'ecommerce-item-thumb';
+                        const img = document.createElement('img');
+                        img.src = item.imgSrc || '';
+                        img.alt = item.imgAlt || item.name;
+                        thumb.appendChild(img);
+
+                        const meta = document.createElement('div');
+                        meta.className = 'ecommerce-wishlist-meta';
+
+                        const name = document.createElement('div');
+                        name.className = 'ecommerce-item-name';
+                        name.textContent = item.name;
+
+                        const sub = document.createElement('div');
+                        sub.className = 'ecommerce-item-sub';
+                        sub.textContent = `₹${item.our.toLocaleString('en-IN')} • Loved item`;
+
+                        meta.appendChild(name);
+                        meta.appendChild(sub);
+
+                        const removeBtn = document.createElement('button');
+                        removeBtn.type = 'button';
+                        removeBtn.className = 'ecommerce-wish-remove';
+                        removeBtn.setAttribute('aria-label', `Remove ${item.name}`);
+                        removeBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                        removeBtn.addEventListener('click', function () {
+                            const idx = state.wishlist.findIndex((entry) => entry.key === item.key);
+                            if (idx >= 0) {
+                                state.wishlist.splice(idx, 1);
+                            }
+                            syncHeartButtons();
+                            updateHeaderBadges();
+                            updateSidebarUI();
+                        });
+
+                        itemBody.appendChild(serial);
+                        itemBody.appendChild(thumb);
+                        itemBody.appendChild(meta);
+                        wItem.appendChild(itemBody);
+                        wItem.appendChild(removeBtn);
+                        wishList.appendChild(wItem);
+                    });
+                }
+            }
+
+            function updateSidebarUI() {
+                const activeTab = window.__nutritionHaveliSidebarTab || CART_TAB;
+                tabCart.classList.toggle('active', activeTab === CART_TAB);
+                tabWishlist.classList.toggle('active', activeTab === WISHLIST_TAB);
+                cartPanel.style.display = activeTab === CART_TAB ? '' : 'none';
+                wishlistPanel.style.display = activeTab === WISHLIST_TAB ? '' : 'none';
+                title.textContent = activeTab === CART_TAB ? 'My Cart' : 'My Wishlist';
+                if (activeTab === CART_TAB) {
+                    renderCart();
+                    cartFooter.style.display = '';
+                } else {
+                    renderWishlist();
+                    cartFooter.style.display = 'none';
+                }
+            }
+
+            function setTab(tabKey) {
+                window.__nutritionHaveliSidebarTab = tabKey;
+                updateSidebarUI();
+            }
+
+            let lastFocusSidebar = null;
+            function openSidebar(tabKey) {
+                lastFocusSidebar = document.activeElement;
+                window.__nutritionHaveliSidebarTab = tabKey;
+                overlay.classList.add('active');
+                sidebar.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                updateSidebarUI();
+                closeBtnSidebar.focus();
+                overlay.setAttribute('aria-hidden', 'false');
+            }
+
+            function closeSidebar() {
+                overlay.classList.remove('active');
+                sidebar.classList.remove('active');
+                document.body.style.overflow = '';
+                overlay.setAttribute('aria-hidden', 'true');
+                if (lastFocusSidebar && typeof lastFocusSidebar.focus === 'function') {
+                    lastFocusSidebar.focus();
+                }
+            }
+
+            tabCart.addEventListener('click', function () {
+                setTab(CART_TAB);
+            });
+
+            tabWishlist.addEventListener('click', function () {
+                setTab(WISHLIST_TAB);
+            });
+
+            closeBtnSidebar.addEventListener('click', function (e) {
+                e.stopPropagation();
+                closeSidebar();
+            });
+
+            overlay.addEventListener('click', function () {
+                closeSidebar();
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && sidebar.classList.contains('active')) {
+                    closeSidebar();
+                }
+            });
+
+            sidebarBridgeOpen = openSidebar;
+            sidebarBridgeClose = closeSidebar;
+            sidebarBridgeSetTab = setTab;
+            sidebarBridgeUpdateUI = updateSidebarUI;
+
+            ensureHeaderTriggers();
+            updateSidebarUI();
+            updateHeaderBadges();
+            window.__ecommerceSidebar = { openSidebar, closeSidebar, setTab, updateSidebarUI };
+        }
 
         ensureHeaderTriggers();
-        renderCart();
-        renderWishlist();
         updateHeaderBadges();
-        window.__ecommerceSidebar = { openSidebar, closeSidebar, setTab };
+        if (typeof window.__ecommerceSidebar?.updateSidebarUI === 'function') {
+            window.__ecommerceSidebar.updateSidebarUI();
+        }
     }
 
     ensureSidebarUI();
