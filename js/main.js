@@ -812,10 +812,47 @@ function initProductsEnhancements() {
                 return;
             }
 
-            const message = buildWhatsAppMessage(activeCheckoutItems, { name, phone, address });
-            const url = `https://wa.me/919827676474?text=${encodeURIComponent(message)}`;
-            window.open(url, '_blank', 'noopener,noreferrer');
-            closeCheckoutModal();
+          const message = buildWhatsAppMessage(activeCheckoutItems, { name, phone, address });
+        
+        // =========================================================================
+        // 📦 OWNER DASHBOARD LOGS: Save Order to LocalStorage before redirecting
+        // =========================================================================
+        try {
+            const orderLogData = {
+                dateTime: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+                customerName: name || 'Guest Customer', 
+                customerPhone: phone || 'No Phone',
+                customerAddress: address || 'No Address',
+                // Map fields based on checkout item shape from this file:
+                // item.name, item.our, item.quantity
+                items: (activeCheckoutItems || []).map(item => {
+                    const qty = item.quantity || item.qty || 1;
+                    const unitPrice = Number(item.our || item.price || 0);
+                    const title = item.title || item.name || 'Product';
+                    const total = unitPrice * qty;
+                    return `${title} (Qty: ${qty}) - ₹${total}`;
+                }).join(', '),
+                // Grand total shown in checkout modal uses #checkout-grand-total
+                grandTotal: document.getElementById('checkout-grand-total')?.innerText || '₹0'
+            };
+
+            // Pehle se saved orders array nikalna
+            let currentOrders = JSON.parse(localStorage.getItem('nutrition_haveli_orders')) || [];
+            
+            // Naye order ko unshift karke array ke starting (top) par rakhna
+            currentOrders.unshift(orderLogData);
+            
+            // Local storage mein save lock karna
+            localStorage.setItem('nutrition_haveli_orders', JSON.stringify(currentOrders));
+            console.log("Order successfully saved to Owner Logs! 👑");
+        } catch (error) {
+            console.error("Error saving order to logs:", error);
+        }
+        // =========================================================================
+
+        const url = `https://wa.me/919827676474?text=${encodeURIComponent(message)}`;
+        window.open(url, '_blank', 'noopener,noreferrer');
+        closeCheckoutModal();
         });
     }
     const WISHLIST_TAB = 'my-wishlist';

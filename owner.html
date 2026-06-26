@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nutrition Haveli | Admin Dashboard</title>
+    <!-- Hum wahi main styles linked rakhenge jo custom fonts aur layout setup ka kaam karein -->
+    <link rel="stylesheet" href="css/style.css"> 
+    <style>
+        .admin-body { background-color: #0a0a0a; color: white; padding: 2rem; font-family: inherit; }
+        .admin-header { margin-bottom: 2rem; border-bottom: 2px solid #222; padding-bottom: 1rem; }
+        .admin-header h1 { font-size: 2.5rem; color: #fff; }
+        .admin-header span { color: #e1306c; font-weight: bold; }
+        
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; }
+        .admin-card { background: #111; padding: 1.5rem; border-radius: 12px; border: 1px solid #222; }
+        .admin-card h2 { color: #fff; font-size: 1.5rem; margin-bottom: 1.5rem; border-left: 4px solid #e1306c; padding-left: 10px; }
+        
+        /* Local Logs List */
+        .order-item { background: #1a1a1a; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid #333; }
+        .order-meta { font-size: 0.85rem; color: #888; margin-bottom: 0.5rem; }
+        .order-customer { font-weight: bold; color: #fff; font-size: 1.1rem; }
+        .order-details { font-size: 0.95rem; color: #ccc; margin: 0.5rem 0; }
+        .order-total { font-weight: bold; color: #42f57e; font-size: 1.1rem; }
+        
+        /* Placeholder styling */
+        .empty-logs { color: #666; font-style: italic; text-align: center; margin-top: 2rem; }
+    </style>
+</head>
+<body class="admin-body">
+
+    <div class="admin-header">
+        <h1>Welcome back, <span>Boss! 👑</span></h1>
+        <p>Nutrition Haveli Live Business Monitor</p>
+    </div>
+    
+    <div class="dashboard-grid">
+        <!-- 📦 Live Order Logs Section -->
+        <div class="admin-card">
+            <h2>📦 Live Order Logs</h2>
+            <div id="order-logs-container">
+                <p class="empty-logs">No orders recorded in this session yet.</p>
+            </div>
+        </div>
+
+        <!-- 🛠️ Dynamic Inventory Section -->
+        <div class="admin-card">
+            <h2>🛠️ Dynamic Inventory</h2>
+            <p style="color: #666;">Product list management panel coming up next...</p>
+        </div>
+
+        <!-- 📊 Metrics Tracker Section -->
+        <div class="admin-card">
+            <h2>📊 Metrics Tracker</h2>
+            <p style="color: #666;">Analytics and regular user detection loading...</p>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        const STORAGE_KEY = 'nutrition_haveli_orders';
+
+        // 🔁 Redirect if opened as file:// to the same HTTP server as index.html (Live Server)
+        function redirectIfNeeded() {
+            try {
+                // If this page is loaded from file://, localStorage won't match the Live Server origin.
+                if (window.location.protocol === 'file:') {
+                    const host = location.hostname || '127.0.0.1';
+                    const port = '5500';
+
+                    // If hostname is empty in some browsers, fall back to typical Live Server default.
+                    const target = `http://${host}:${port}/owner.html`;
+
+                    // Preserve hash (if any)
+                    const hash = window.location.hash || '';
+                    window.location.replace(target + hash);
+                    return true;
+                }
+            } catch (e) {
+                console.warn('redirectIfNeeded failed:', e);
+            }
+            return false;
+        }
+
+        function setContainerMessage(message, isError) {
+            const container = document.getElementById('order-logs-container');
+            container.innerHTML = `
+                <p class="empty-logs" style="${isError ? 'color:#ff5a7a;' : ''}">${message}</p>
+            `;
+        }
+
+        // 🔄 Function to fetch and display orders from local storage
+        function loadOrderLogs() {
+            const container = document.getElementById('order-logs-container');
+
+            let orders = [];
+            try {
+                orders = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            } catch (e) {
+                console.error('Failed parsing storage orders:', e);
+            }
+
+            if (!orders.length) {
+                container.innerHTML = '<p class="empty-logs">No orders recorded yet. Make a test order!</p>';
+                return;
+            }
+
+            container.innerHTML = orders
+                .map((order, index) => `
+                    <div class="order-item">
+                        <div class="order-meta">📅 ${order.dateTime} | Order #${orders.length - index}</div>
+                        <div class="order-customer">👤 Name: ${order.customerName}</div>
+                        <div class="order-meta">📞 Phone: ${order.customerPhone}</div>
+                        <div class="order-meta">📍 Address: ${order.customerAddress}</div>
+                        <div class="order-details">📦 <strong>Products:</strong> ${order.items}</div>
+                        <div class="order-total">💰 Total Amount: ${order.grandTotal}</div>
+                    </div>
+                `)
+                .join('');
+        }
+
+        function startLivePolling() {
+            // Re-render frequently so new orders appear without refresh.
+            // (You can increase/decrease interval as needed.)
+            const intervalMs = 1500;
+
+            // First render
+            loadOrderLogs();
+
+            // Then poll
+            setInterval(() => {
+                try {
+                    loadOrderLogs();
+                } catch (e) {
+                    console.warn('Polling loadOrderLogs failed:', e);
+                }
+            }, intervalMs);
+        }
+
+        // Entry
+        const redirected = redirectIfNeeded();
+        if (!redirected) {
+            // If still file:// (redirect blocked), show actionable info.
+            if (window.location.protocol === 'file:') {
+                setContainerMessage(
+                    'Open owner.html using Live Server on the same port as index.html so localStorage sync works (e.g. http://127.0.0.1:5500/owner.html).',
+                    true
+                );
+                return;
+            }
+
+            window.addEventListener('DOMContentLoaded', startLivePolling);
+            // In case DOMContentLoaded already fired
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                startLivePolling();
+            }
+        }
+    })();
+</script>
+</body>
+</html>
