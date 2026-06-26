@@ -558,6 +558,50 @@
     </button>
 
     <!-- ============================================
+         CHECKOUT MODAL
+         ============================================ -->
+    <div id="checkout-modal" class="checkout-modal" aria-hidden="true">
+        <div class="checkout-modal-overlay" data-close-checkout></div>
+        <div class="checkout-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="checkout-modal-title">
+            <button type="button" class="checkout-modal-close" aria-label="Close checkout" data-close-checkout>&times;</button>
+            <div class="checkout-modal-content">
+                <div class="checkout-modal-header">
+                    <p class="checkout-modal-eyebrow">Premium Checkout</p>
+                    <h3 id="checkout-modal-title">Complete Your Order</h3>
+                    <p class="checkout-modal-subtitle">Secure your supplements in just a few steps.</p>
+                </div>
+
+                <div class="checkout-summary-card">
+                    <div class="checkout-summary-header">
+                        <h4>Order Summary</h4>
+                        <div class="checkout-grand-total">Grand Total: <span id="checkout-grand-total">₹0</span></div>
+                    </div>
+                    <div id="checkout-items-list" class="checkout-items-list"></div>
+                </div>
+
+                <form id="checkout-form" class="checkout-form">
+                    <div class="checkout-form-grid">
+                        <label class="checkout-field">
+                            <span>Full Name</span>
+                            <input type="text" id="checkout-name" name="name" placeholder="Enter your full name" required>
+                        </label>
+                        <label class="checkout-field">
+                            <span>Phone Number</span>
+                            <input type="tel" id="checkout-phone" name="phone" placeholder="Enter your phone number" required>
+                        </label>
+                    </div>
+                    <label class="checkout-field checkout-field-full">
+                        <span>Delivery Address</span>
+                        <textarea id="checkout-address" name="address" rows="4" placeholder="Enter your complete delivery address" required></textarea>
+                    </label>
+                    <p id="checkout-form-message" class="checkout-form-message" role="alert"></p>
+                    <button type="submit" class="checkout-confirm-btn">Confirm Order via WhatsApp</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
          GSAP (GreenSock) - CDN
          ============================================ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>

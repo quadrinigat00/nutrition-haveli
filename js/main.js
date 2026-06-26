@@ -626,6 +626,117 @@ function initProductsEnhancements() {
     });
 
     const CART_TAB = 'my-cart';
+    const checkoutModal = document.getElementById('checkout-modal');
+    const checkoutItemsList = document.getElementById('checkout-items-list');
+    const checkoutGrandTotal = document.getElementById('checkout-grand-total');
+    const checkoutNameInput = document.getElementById('checkout-name');
+    const checkoutPhoneInput = document.getElementById('checkout-phone');
+    const checkoutAddressInput = document.getElementById('checkout-address');
+    const checkoutForm = document.getElementById('checkout-form');
+    const checkoutFormMessage = document.getElementById('checkout-form-message');
+    let activeCheckoutItems = [];
+
+    function formatINR(value) {
+        const num = Number(value) || 0;
+        return '₹' + num.toLocaleString('en-IN');
+    }
+
+    function openCheckoutModal(items, options) {
+        const normalizedItems = (items || []).map((item) => ({
+            ...item,
+            quantity: item.quantity || item.qty || 1
+        }));
+
+        activeCheckoutItems = normalizedItems;
+
+        if (options?.clearCart) {
+            state.cart = [];
+        }
+
+        if (!checkoutModal) return;
+
+        checkoutItemsList.innerHTML = '';
+        const total = normalizedItems.reduce((sum, item) => sum + item.our * (item.quantity || 1), 0);
+        checkoutGrandTotal.textContent = formatINR(total);
+
+        if (!normalizedItems.length) {
+            checkoutItemsList.innerHTML = '<div class="checkout-item-row"><span class="checkout-item-name">No items selected.</span></div>';
+        } else {
+            normalizedItems.forEach((item) => {
+                const row = document.createElement('div');
+                row.className = 'checkout-item-row';
+                const name = document.createElement('span');
+                name.className = 'checkout-item-name';
+                name.textContent = `${item.name} ×${item.quantity || 1}`;
+                const price = document.createElement('span');
+                price.textContent = formatINR(item.our * (item.quantity || 1));
+                row.appendChild(name);
+                row.appendChild(price);
+                checkoutItemsList.appendChild(row);
+            });
+        }
+
+        checkoutFormMessage.textContent = '';
+        checkoutModal.classList.add('active');
+        checkoutModal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        if (checkoutNameInput) checkoutNameInput.focus();
+    }
+
+    function closeCheckoutModal() {
+        if (!checkoutModal) return;
+        checkoutModal.classList.remove('active');
+        checkoutModal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        checkoutForm.reset();
+        checkoutFormMessage.textContent = '';
+    }
+
+    function buildWhatsAppMessage(items, customer) {
+        const lines = [
+            '*NUTRITION HAVELI - NEW ORDER* 🔥',
+            '----------------------------------',
+            '👤 *Customer Details:*',
+            `- Name: ${customer.name}`,
+            `- Phone: ${customer.phone}`,
+            `- Address: ${customer.address}`,
+            '',
+            '🛒 *Items Ordered:*',
+            ...items.map((item) => {
+                const quantity = item.quantity || item.qty || 1;
+                const total = item.our * quantity;
+                return `- ${item.name} (x${quantity}) - ${formatINR(total)}`;
+            }),
+            '',
+            `💰 *Total Amount:* ${formatINR(items.reduce((sum, item) => sum + item.our * (item.quantity || item.qty || 1), 0))}`,
+            '----------------------------------'
+        ];
+
+        return lines.join('\n');
+    }
+
+    if (checkoutModal) {
+        checkoutModal.querySelectorAll('[data-close-checkout]').forEach((closeEl) => {
+            closeEl.addEventListener('click', closeCheckoutModal);
+        });
+
+        checkoutForm?.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const name = checkoutNameInput?.value.trim() || '';
+            const phone = checkoutPhoneInput?.value.trim() || '';
+            const address = checkoutAddressInput?.value.trim() || '';
+
+            if (!name || !phone || !address) {
+                checkoutFormMessage.textContent = 'Please complete all fields before continuing.';
+                return;
+            }
+
+            const message = buildWhatsAppMessage(activeCheckoutItems, { name, phone, address });
+            const url = `https://wa.me/919827676474?text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank', 'noopener,noreferrer');
+            closeCheckoutModal();
+        });
+    }
     const WISHLIST_TAB = 'my-wishlist';
     let sidebarBridgeOpen = null;
     let sidebarBridgeClose = null;
@@ -820,6 +931,16 @@ function initProductsEnhancements() {
             toggleWishlist(productData);
         });
 
+        const existingOrderButton = info.querySelector('.btn-product');
+        if (existingOrderButton) {
+            existingOrderButton.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                state.cart = [];
+                openCheckoutModal([{ ...productData, quantity: 1 }], { clearCart: true });
+            });
+        }
+
         if (!info.querySelector('.product-action-row')) {
             const row = document.createElement('div');
             row.className = 'product-action-row';
@@ -943,11 +1064,6 @@ function initProductsEnhancements() {
     modalCard.appendChild(modalInner);
     modalOverlay.appendChild(modalCard);
     document.body.appendChild(modalOverlay);
-
-    function formatINR(value) {
-        const num = Number(value) || 0;
-        return '₹' + num.toLocaleString('en-IN');
-    }
 
     function openProductsDetails(productData) {
         activeProduct = productData;
@@ -1099,12 +1215,8 @@ function initProductsEnhancements() {
             orderBtn.className = 'ecommerce-order-btn';
             orderBtn.textContent = 'Order Now';
             orderBtn.addEventListener('click', function () {
-                const message = state.cart.map((item) => {
-                    const quantity = item.quantity || item.qty || 1;
-                    return `${item.name} x${quantity}`;
-                }).join(', ');
-                const url = `https://wa.me/919827676474?text=${encodeURIComponent(`Hello, I want to order: ${message || 'products'}`)}`;
-                window.open(url, '_blank', 'noopener,noreferrer');
+                if (!state.cart.length) return;
+                openCheckoutModal(state.cart);
             });
 
             cartFooterInner.appendChild(totalLabel);
