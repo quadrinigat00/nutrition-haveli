@@ -1572,8 +1572,107 @@ p:last-child {
     }
 }
 
+/* ============================================
+   CONTACT ITEM (Call/WhatsApp/Instagram)
+   ============================================ */
+.contact-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+}
+
+.contact-icon-frame {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--color-accent-red), var(--color-accent-blue));
+    border-radius: var(--radius-md);
+    flex-shrink: 0;
+}
+
+.contact-icon-frame i {
+    color: var(--color-white);
+    font-size: 1.25rem;
+}
+
+.contact-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.contact-text h3 {
+    font-size: 1rem;
+    color: var(--color-white);
+    margin: 0;
+}
+
+.contact-text p,
+.contact-text p a {
+    font-size: 0.95rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+    font-family: var(--font-primary);
+}
+
+.contact-text p a {
+    text-decoration: none;
+}
+
+.contact-text p a:hover {
+    color: var(--color-text-primary);
+}
+
+/* ============================================
+   Instagram handle links used in Location + Footer (legacy classes)
+   ============================================ */
+.location-instagram-link,
+.footer-instagram-handle {
+    color: var(--color-accent-red-light);
+    font-weight: 800;
+    font-size: 0.95rem;
+    line-height: 1.2;
+    display: inline-block;
+    text-decoration: none;
+    transition: var(--transition-normal);
+}
+
+.location-instagram-link i,
+.footer-instagram-handle i {
+    color: inherit;
+}
+
+.location-instagram-link:hover,
+.footer-instagram-handle:hover {
+    background: linear-gradient(135deg, #E1306C, #C13584);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 0 14px rgba(225,48,108,0.35), 0 0 18px rgba(193,53,132,0.25);
+}
+
+/* Keep icon color gradient when used standalone */
+.location-item .fa-instagram,
+.footer-contact .fa-instagram {
+    background: linear-gradient(135deg, #E1306C, #C13584);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Ensure new Instagram contact p link matches muted contact text color (no forced pink) */
+.contact-text p a,
+.contact-text p a:visited {
+    color: var(--color-text-secondary);
+    -webkit-text-fill-color: initial;
+}
+
 /* Small Mobile */
 @media (max-width: 480px) {
+
+
     .hero-cta {
         flex-direction: column;
         align-items: center;
