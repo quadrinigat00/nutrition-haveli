@@ -311,7 +311,8 @@
     .trash-order-btn:focus-visible{outline:none;box-shadow:var(--ring)}
 
     .order-layout{display:flex;gap:14px;align-items:flex-start;}
-    .order-left{flex:1;min-width:0;padding-right:10px}
+.order-left{flex:1;min-width:0;padding-right:52px}
+
 
     .order-right-actions{
       display:flex;
@@ -669,8 +670,10 @@
       </div>
 
       <div class="modal-body">
-        <div class="empty">Trash UI is not fully implemented in this build.</div>
+        <div id="trash-modal-content" class="orders-grid" aria-live="polite"></div>
+        <div id="trash-modal-empty" class="empty" style="display:none; margin-top:12px;">Trash is empty. Move items to trash to view them here.</div>
       </div>
+
     </div>
   </div>
 
@@ -1114,14 +1117,129 @@
     // =============================
     // TRASH MODAL (basic)
     // =============================
+    function openTrashModal(){
+      const modal = document.getElementById('recent-trash-modal');
+      if(!modal) return;
+
+      const contentEl = document.getElementById('trash-modal-content');
+      const emptyEl = document.getElementById('trash-modal-empty');
+      if(!contentEl || !emptyEl) {
+        modal.classList.add('active');
+        return;
+      }
+
+      // Refresh from disk each open
+      trashOrders = safeParse(LS_TRASH, []);
+      trashOrders = normalizeOrderArray(trashOrders);
+
+      contentEl.innerHTML = '';
+
+      if(!trashOrders.length){
+        emptyEl.style.display = 'block';
+      } else {
+        emptyEl.style.display = 'none';
+      }
+
+      trashOrders.forEach(ensureId);
+
+      if(trashOrders.length){
+        trashOrders.forEach(o => {
+          const id = o.id;
+          const customerName = extractCustomerName(o);
+          const { phone, address } = extractCustomerMeta(o);
+
+          const total = getOrderTotal(o);
+          const trashMetadata = o.trashMetadata || (o.paymentStatus === 'Done' ? 'Cleared' : `Pending (₹${Number(o.pendingAmount || 0)})`);
+
+          const card = document.createElement('div');
+          card.className = 'order-card';
+          card.dataset.orderId = String(id);
+
+          const actionWrap = document.createElement('div');
+          actionWrap.className = 'order-layout';
+
+          const left = document.createElement('div');
+          left.className = 'order-left';
+
+          const meta = document.createElement('div');
+          meta.className = 'order-meta';
+          const time = o.dateTime || o.date || o.createdAt || '';
+          meta.innerHTML = `
+            <span><i class="fa-solid fa-clock"></i> ${escapeHtml(time || '—')}</span>
+            <span class="status-badge ${o.paymentStatus === 'Done' ? 'status-ok' : 'status-warn'}">${escapeHtml(trashMetadata)}</span>
+          `;
+
+          const cust = document.createElement('div');
+          cust.className = 'order-customer';
+          cust.textContent = customerName;
+
+          const details = document.createElement('div');
+          details.className = 'order-details';
+
+          const row1 = document.createElement('div');
+          row1.className = 'row';
+          row1.innerHTML = `<span class="k">Phone</span><span class="v">${escapeHtml(phone || '—')}</span>`;
+
+          const row2 = document.createElement('div');
+          row2.className = 'row';
+          row2.innerHTML = `<span class="k">Address</span><span class="v">${escapeHtml(address || '—')}</span>`;
+
+          const itemsArrOrStr = (o.items !== undefined ? o.items : (o.itemsList !== undefined ? o.itemsList : ''));
+          const itemsText = Array.isArray(itemsArrOrStr) ? itemsArrOrStr.join(', ') : (itemsArrOrStr ? String(itemsArrOrStr) : '');
+
+          const itemsLabel = document.createElement('div');
+          itemsLabel.className = 'row';
+          itemsLabel.innerHTML = `<span class="k">Items:</span><span class="v" style="white-space:pre-wrap;">${escapeHtml(itemsText || '—')}</span>`;
+
+          details.appendChild(row1);
+          details.appendChild(row2);
+          details.appendChild(itemsLabel);
+
+          left.appendChild(meta);
+          left.appendChild(cust);
+          left.appendChild(details);
+
+          const actions = document.createElement('div');
+          actions.className = 'order-right-actions';
+
+          const restoreBtn = document.createElement('button');
+          restoreBtn.type = 'button';
+          restoreBtn.className = 'pay-action-btn';
+          restoreBtn.innerHTML = `<i class="fa-solid fa-arrow-rotate-left"></i><span>Restore</span>`;
+          restoreBtn.setAttribute('onclick', `window.handleRestoreFromTrash(${JSON.stringify(id)})`);
+
+          actions.appendChild(restoreBtn);
+
+          actionWrap.appendChild(left);
+          actionWrap.appendChild(actions);
+
+          const totalEl = document.createElement('div');
+          totalEl.className = 'order-total';
+          totalEl.innerHTML = `
+            <span class="label">Grand Total</span>
+            <span class="value">${formatINR(total)}</span>
+          `;
+
+          card.appendChild(actionWrap);
+          card.appendChild(totalEl);
+
+          contentEl.appendChild(card);
+        });
+      }
+
+      modal.classList.add('active');
+    }
+
     function initTrashModal(){
       const openBtn = document.getElementById('recent-trash-access');
-      const modal = document.getElementById('recent-trash-modal');
-      if(!openBtn || !modal) return;
+      if(!openBtn) return;
 
       openBtn.addEventListener('click', () => {
-        modal.classList.add('active');
+        openTrashModal();
       });
+
+      const modal = document.getElementById('recent-trash-modal');
+      if(!modal) return;
 
       document.querySelectorAll('[data-modal-close]').forEach(x => {
         x.addEventListener('click', () => modal.classList.remove('active'));
@@ -1135,6 +1253,25 @@
         if (e.key === 'Escape') modal.classList.remove('active');
       });
     }
+
+    window.handleRestoreFromTrash = function(id){
+      id = parseId(id);
+      let target = trashOrders.find(o => o.id === id);
+      if(!target) return;
+
+      // Put back to orders/pending based on paymentStatus
+      const isCleared = target.paymentStatus === 'Done';
+      if(isCleared){
+        if(!paidOrders.some(o => o.id === id)) paidOrders.push(target);
+      } else {
+        if(!pendingOrders.some(o => o.id === id)) pendingOrders.push(target);
+      }
+
+      trashOrders = trashOrders.filter(o => o.id !== id);
+      commitStateToDisk('🟢 Restored from Trash.');
+    };
+
+
 
     // =============================
     // INIT
