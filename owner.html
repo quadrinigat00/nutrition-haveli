@@ -372,6 +372,10 @@
     .order-total .label{color:var(--muted);font-weight:900}
     .order-total .value{color:rgba(255,255,255,.95);font-weight:1000;letter-spacing:.2px}
 
+    /* Keep total price from colliding with the absolute Trash button */
+    .order-total .value{margin-right: 2.5rem;}
+
+
     .empty{margin:16px 0 6px;padding:16px;border-radius:var(--radius-md);background:rgba(0,0,0,.18);border:1px dashed rgba(255,255,255,.14);color:var(--muted);text-align:center;}
 
     .status-badge{
@@ -423,12 +427,16 @@
     .modal-overlay.active .modal{transform:translateY(0) scale(1);opacity:1}
 
     .modal-header{
-      position:sticky;top:0;z-index:1;
+      position:sticky;
+      top:0;
+      z-index:1100;
       display:flex;align-items:center;justify-content:space-between;gap:12px;
       padding:16px;
-      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0));
+      background:rgba(10,10,14,.98);
       border-bottom:1px solid rgba(255,255,255,.08);
+      isolation:isolate;
     }
+
     .modal-header .title{display:flex;align-items:center;gap:10px;font-weight:1000;letter-spacing:.2px}
     .modal-header .title i{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10)}
 
@@ -1210,8 +1218,17 @@
 
           actions.appendChild(restoreBtn);
 
+          const purgeBtn = document.createElement('button');
+          purgeBtn.type = 'button';
+          purgeBtn.className = 'pay-action-btn pay-clear';
+          purgeBtn.innerHTML = `<i class="fa-solid fa-bomb"></i><span>Permanently Delete</span>`;
+          purgeBtn.setAttribute('onclick', `window.handlePermanentDelete(${JSON.stringify(id)})`);
+
+          actions.appendChild(purgeBtn);
+
           actionWrap.appendChild(left);
           actionWrap.appendChild(actions);
+
 
           const totalEl = document.createElement('div');
           totalEl.className = 'order-total';
@@ -1270,6 +1287,33 @@
       trashOrders = trashOrders.filter(o => o.id !== id);
       commitStateToDisk('🟢 Restored from Trash.');
     };
+
+    // =============================
+    // PERMANENT PURGE (Trash)
+    // =============================
+    window.handlePermanentDelete = function(id){
+      id = parseId(id);
+      const target = trashOrders.find(o => o.id === id);
+      if(!target) return;
+
+      // Remove permanently from the trash channel only
+      trashOrders = trashOrders.filter(o => o.id !== id);
+
+      // Persist + refresh UI + counter
+      commitStateToDisk('🗑️ Permanently Deleted.');
+
+      // If modal is open, refresh its content instantly.
+      const modal = document.getElementById('recent-trash-modal');
+      if(modal && modal.classList.contains('active')){
+        // Re-render trash modal content from the updated state/disk.
+        openTrashModal();
+      }
+
+
+    };
+
+
+
 
 
 
