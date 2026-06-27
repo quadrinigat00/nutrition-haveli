@@ -1,161 +1,1166 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nutrition Haveli | Admin Dashboard</title>
-    <!-- Hum wahi main styles linked rakhenge jo custom fonts aur layout setup ka kaam karein -->
-    <link rel="stylesheet" href="css/style.css"> 
-    <style>
-        .admin-body { background-color: #0a0a0a; color: white; padding: 2rem; font-family: inherit; }
-        .admin-header { margin-bottom: 2rem; border-bottom: 2px solid #222; padding-bottom: 1rem; }
-        .admin-header h1 { font-size: 2.5rem; color: #fff; }
-        .admin-header span { color: #e1306c; font-weight: bold; }
-        
-        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; }
-        .admin-card { background: #111; padding: 1.5rem; border-radius: 12px; border: 1px solid #222; }
-        .admin-card h2 { color: #fff; font-size: 1.5rem; margin-bottom: 1.5rem; border-left: 4px solid #e1306c; padding-left: 10px; }
-        
-        /* Local Logs List */
-        .order-item { background: #1a1a1a; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid #333; }
-        .order-meta { font-size: 0.85rem; color: #888; margin-bottom: 0.5rem; }
-        .order-customer { font-weight: bold; color: #fff; font-size: 1.1rem; }
-        .order-details { font-size: 0.95rem; color: #ccc; margin: 0.5rem 0; }
-        .order-total { font-weight: bold; color: #42f57e; font-size: 1.1rem; }
-        
-        /* Placeholder styling */
-        .empty-logs { color: #666; font-style: italic; text-align: center; margin-top: 2rem; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nutrition Haveli | Owner Console</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <style>
+    :root{
+      --bg0:#06060a;
+      --brand-indigo:#7c3aed;
+      --brand-blue:#3b82f6;
+      --brand-crimson:#e11d48;
+
+      --text:rgba(255,255,255,.93);
+      --muted:rgba(255,255,255,.65);
+
+      --panel:rgba(255,255,255,.035);
+      --panel2:rgba(255,255,255,.06);
+      --stroke:rgba(255,255,255,.10);
+      --stroke2:rgba(255,255,255,.14);
+
+      --radius-lg:18px;
+      --radius-md:12px;
+      --radius-sm:10px;
+
+      --shadow-soft:0 10px 30px rgba(0,0,0,.40);
+      --shadow-glow:0 0 0 1px rgba(255,255,255,.05), 0 22px 70px rgba(0,0,0,.55);
+
+      --ring:0 0 0 3px rgba(124,58,237,.35), 0 0 0 1px rgba(59,130,246,.25);
+      --t:180ms ease;
+
+      --ok-bg:rgba(34,197,94,.18);
+      --ok-border:rgba(34,197,94,.35);
+      --warn-bg:rgba(59,130,246,.16);
+      --warn-border:rgba(59,130,246,.35);
+      --danger-bg:rgba(225,29,72,.16);
+      --danger-border:rgba(225,29,72,.35);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
+      background:var(--bg0);
+      overflow-x:hidden;
+    }
+
+    .owner-bg{
+      min-height:100vh;
+      padding:24px 16px 60px;
+      position:relative;
+      isolation:isolate;
+      background:
+        radial-gradient(900px 500px at 15% 10%, rgba(124,58,237,.35), transparent 55%),
+        radial-gradient(900px 560px at 85% 22%, rgba(225,29,72,.25), transparent 52%),
+        radial-gradient(1000px 700px at 50% 110%, rgba(59,130,246,.20), transparent 55%),
+        linear-gradient(135deg, #07070f 0%, #0b0718 40%, #070712 100%);
+    }
+    .owner-bg::before{
+      content:'';
+      position:absolute;
+      inset:0;
+      z-index:-1;
+      background:
+        linear-gradient(rgba(124,58,237,.18) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,.14) 1px, transparent 1px),
+        repeating-linear-gradient(180deg, rgba(255,255,255,.03) 0px, rgba(255,255,255,.03) 1px, transparent 2px, transparent 6px);
+      background-size:48px 48px,48px 48px,100% 8px;
+      opacity:.18;
+      pointer-events:none;
+      mask-image:radial-gradient(1200px 700px at 50% 10%, #000 55%, transparent 100%);
+    }
+
+    .app-shell{
+      max-width:1200px;
+      margin:0 auto;
+      display:grid;
+      grid-template-rows:auto 1fr;
+      gap:16px;
+    }
+
+    .topbar{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:16px;
+      align-items:start;
+      padding:16px;
+      border-radius:var(--radius-lg);
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      backdrop-filter:blur(10px);
+      box-shadow:var(--shadow-soft);
+      overflow:hidden;
+      position:relative;
+    }
+    .topbar::before{
+      content:'';
+      position:absolute;
+      inset:-2px;
+      background:linear-gradient(135deg, rgba(124,58,237,.25), rgba(59,130,246,.18), rgba(225,29,72,.18));
+      opacity:.18;
+      pointer-events:none;
+    }
+    .topbar > *{position:relative;z-index:1}
+
+    .topbar .brand{display:flex;align-items:flex-start;justify-content:flex-start}
+    .topbar .brand h1{
+      margin:0;
+      font-size:clamp(20px,3vw,30px);
+      letter-spacing:.2px;
+      line-height:1.15;
+      font-weight:800;
+    }
+
+    .trash-access{
+      display:inline-flex;
+      align-items:center;
+      gap:12px;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.22);
+      cursor:pointer;
+      transition:transform var(--t),border-color var(--t),background var(--t);
+      user-select:none;
+      white-space:nowrap;
+      color:rgba(255,255,255,.98);
+    }
+    .trash-access:hover{transform:translateY(-1px);border-color:rgba(225,29,72,.38);background:rgba(0,0,0,.30)}
+    .trash-access:focus-visible{outline:none;box-shadow:var(--ring)}
+
+    .trash-access .icon{
+      width:36px;height:36px;border-radius:999px;
+      display:grid;place-items:center;
+      background:linear-gradient(135deg, rgba(225,29,72,.35), rgba(124,58,237,.30));
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow:0 0 0 1px rgba(0,0,0,.2) inset;
+      flex-shrink:0;
+    }
+    .trash-access .icon i{color:rgba(255,255,255,.98);}
+
+    .trash-access .label{display:grid;line-height:1.05;}
+    .trash-access .label strong{font-size:.98rem;letter-spacing:.2px;color:rgba(255,255,255,.98)}
+    .trash-access .label span{font-size:.86rem;color:rgba(255,255,255,.80)}
+
+    .trash-access .counter{
+      min-width:34px;height:22px;
+      padding:0 9px;
+      border-radius:999px;
+      display:inline-flex;align-items:center;justify-content:center;
+      background:rgba(225,29,72,.14);
+      border:1px solid rgba(225,29,72,.28);
+      font-weight:900;
+      font-size:.82rem;
+      color:rgba(255,255,255,.98);
+    }
+
+    .layout{display:grid;grid-template-columns:260px 1fr;gap:18px;align-items:start;}
+
+    .sidebar{
+      position:sticky;
+      top:18px;
+      padding:14px;
+      border-radius:var(--radius-lg);
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      backdrop-filter:blur(10px);
+      box-shadow:var(--shadow-soft);
+      overflow:hidden;
+    }
+    .sidebar::before{
+      content:'';
+      position:absolute;
+      inset:-2px;
+      background:linear-gradient(180deg, rgba(124,58,237,.20), rgba(59,130,246,.10), rgba(225,29,72,.12));
+      opacity:.22;
+      pointer-events:none;
+    }
+    .sidebar > *{position:relative;z-index:1}
+
+    .sidebar h2{
+      margin:6px 6px 12px;
+      font-size:.95rem;
+      color:var(--muted);
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      font-weight:900;
+    }
+
+    .nav-list{display:grid;gap:10px}
+    .nav-btn{
+      width:100%;
+      display:grid;
+      grid-template-columns:36px 1fr auto;
+      align-items:center;
+      gap:12px;
+      padding:12px;
+      border-radius:14px;
+      border:1px solid transparent;
+      background:rgba(0,0,0,.12);
+      color:rgba(255,255,255,.88);
+      transition:transform var(--t),background var(--t),border-color var(--t);
+      text-align:left;
+      cursor:pointer;
+    }
+    .nav-btn:hover{transform:translateY(-1px);background:rgba(0,0,0,.18);border-color:rgba(255,255,255,.08)}
+    .nav-btn:focus-visible{outline:none;box-shadow:var(--ring)}
+    .nav-btn.active{
+      background:linear-gradient(135deg, rgba(124,58,237,.22), rgba(59,130,246,.14), rgba(225,29,72,.10));
+      border-color:rgba(255,255,255,.12);
+      box-shadow:0 0 0 1px rgba(255,255,255,.04) inset;
+    }
+    .nav-icon{
+      width:36px;height:36px;
+      border-radius:12px;
+      display:grid;place-items:center;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .nav-icon i{color:rgba(255,255,255,.95)}
+    .nav-title{font-weight:1000;letter-spacing:.2px}
+    .nav-pill{
+      font-size:.82rem;
+      color:var(--muted);
+      font-weight:900;
+      padding:5px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.03);
+    }
+    .nav-btn.active .nav-pill{color:rgba(255,255,255,.88)}
+
+    main{min-height:60vh}
+
+    .view{display:none;animation:viewIn 220ms ease both;}
+    .view.active{display:block}
+    @keyframes viewIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+    .panel{
+      border-radius:var(--radius-lg);
+      background:rgba(255,255,255,.035);
+      border:1px solid rgba(255,255,255,.08);
+      backdrop-filter:blur(10px);
+      box-shadow:var(--shadow-soft);
+      overflow:hidden;
+    }
+
+    .panel-header{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      padding:16px;
+      border-bottom:1px solid rgba(255,255,255,.07);
+    }
+    .panel-title{display:flex;align-items:center;gap:10px;font-weight:1000;letter-spacing:.2px;font-size:1.05rem}
+    .panel-title i{
+      width:36px;height:36px;border-radius:12px;
+      display:grid;place-items:center;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.10);
+    }
+
+    .panel-body{padding:14px 16px 16px}
+
+    #orders-container.orders{display:grid;gap:12px}
+    .orders-grid{display:grid;gap:12px}
+
+    .order-card{
+      position:relative;
+      overflow:hidden;
+      border-radius:14px;
+      padding:14px;
+      background:rgba(0,0,0,.20);
+      border:1px solid rgba(255,255,255,.09);
+      transition:transform var(--t),border-color var(--t),background var(--t);
+    }
+    .order-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.14);background:rgba(0,0,0,.26)}
+
+    .order-card::after{
+      content:'';
+      position:absolute;
+      inset:-1px;
+      background:radial-gradient(600px 140px at 10% 0%, rgba(124,58,237,.16), transparent 55%);
+      opacity:.7;
+      pointer-events:none;
+    }
+    .order-card > *{position:relative;z-index:1}
+
+    /* Trash is sibling/independent: bottom-right of card */
+    .trash-order-btn{
+      position:absolute;
+      bottom:10px;
+      right:10px;
+      width:34px;height:34px;
+      border-radius:12px;
+      display:grid;place-items:center;
+      background:rgba(0,0,0,.35);
+      border:1px solid rgba(255,255,255,.14);
+      color:rgba(255,255,255,.95);
+      transition:transform var(--t),background var(--t),border-color var(--t);
+      z-index:2;
+    }
+    .trash-order-btn i{font-size:.95rem;color:rgba(255,255,255,.92)}
+    .trash-order-btn:hover{transform:translateY(-1px);background:rgba(225,29,72,.20);border-color:rgba(225,29,72,.34)}
+    .trash-order-btn:focus-visible{outline:none;box-shadow:var(--ring)}
+
+    .order-layout{display:flex;gap:14px;align-items:flex-start;}
+    .order-left{flex:1;min-width:0;padding-right:10px}
+
+    .order-right-actions{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      align-items:flex-end;
+      justify-content:flex-start;
+      padding-right:4px;
+    }
+
+    .pay-action-btn{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.05);
+      color:rgba(255,255,255,.95);
+      font-weight:900;
+      letter-spacing:.2px;
+      transition:transform var(--t), background var(--t), border-color var(--t);
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      cursor:pointer;
+      user-select:none;
+      max-width:190px;
+      justify-content:center;
+      line-height:1;
+      white-space:nowrap;
+    }
+    .pay-action-btn:hover{transform:translateY(-1px);border-color:rgba(255,255,255,.18);background:rgba(255,255,255,.09)}
+    .pay-action-btn:focus-visible{outline:none;box-shadow:var(--ring)}
+
+    .pay-clear{background:rgba(225,29,72,.12);border-color:rgba(225,29,72,.28)}
+    .pay-clear:hover{background:rgba(225,29,72,.18);border-color:rgba(225,29,72,.40)}
+    .pay-pending{background:rgba(59,130,246,.12);border-color:rgba(59,130,246,.28)}
+    .pay-pending:hover{background:rgba(59,130,246,.18);border-color:rgba(59,130,246,.40)}
+
+    .order-meta{font-size:.85rem;color:var(--muted);margin-bottom:8px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+    .order-customer{font-weight:1000;letter-spacing:.2px;margin-bottom:8px;font-size:1.02rem;word-break:break-word;}
+    .order-details{display:grid;gap:7px}
+
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .k{color:rgba(255,255,255,.62);font-weight:800;min-width:96px}
+    .v{font-weight:700;color:rgba(255,255,255,.90)}
+
+    .order-total{
+      padding:10px 12px;
+      border-radius:12px;
+      margin-top:12px;
+      background:linear-gradient(135deg, rgba(59,130,246,.14), rgba(124,58,237,.10));
+      border:1px solid rgba(255,255,255,.10);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .order-total .label{color:var(--muted);font-weight:900}
+    .order-total .value{color:rgba(255,255,255,.95);font-weight:1000;letter-spacing:.2px}
+
+    .empty{margin:16px 0 6px;padding:16px;border-radius:var(--radius-md);background:rgba(0,0,0,.18);border:1px dashed rgba(255,255,255,.14);color:var(--muted);text-align:center;}
+
+    .status-badge{
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.04);
+      color:rgba(255,255,255,.92);
+      font-weight:1000;
+      letter-spacing:.2px;
+      font-size:.82rem;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      white-space:nowrap;
+      justify-content:center;
+    }
+    .status-ok{background:var(--ok-bg);border-color:var(--ok-border)}
+    .status-warn{background:var(--warn-bg);border-color:var(--warn-border)}
+
+    .modal-overlay{
+      position:fixed;
+      inset:0;
+      width:100vw;height:100vh;
+      background:rgba(0,0,0,.72);
+      backdrop-filter:blur(10px);
+      -webkit-backdrop-filter:blur(10px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:3000;
+      padding:16px;
+    }
+    .modal-overlay.active{display:flex}
+
+    .modal{
+      width:min(980px,100%);
+      max-height:min(86vh,860px);
+      overflow:auto;
+      border-radius:var(--radius-lg);
+      background:rgba(10,10,14,.96);
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow:var(--shadow-glow);
+      transform:translateY(10px) scale(.99);
+      opacity:0;
+      transition:transform 220ms ease, opacity 220ms ease;
+      position:relative;
+    }
+    .modal-overlay.active .modal{transform:translateY(0) scale(1);opacity:1}
+
+    .modal-header{
+      position:sticky;top:0;z-index:1;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      padding:16px;
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0));
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+    .modal-header .title{display:flex;align-items:center;gap:10px;font-weight:1000;letter-spacing:.2px}
+    .modal-header .title i{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10)}
+
+    .modal-close{
+      width:42px;height:42px;border-radius:14px;
+      display:grid;place-items:center;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.06);
+      color:rgba(255,255,255,.95);
+      transition:transform var(--t), background var(--t), border-color var(--t);
+      cursor:pointer;
+    }
+    .modal-close:hover{transform:translateY(-1px);background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.18)}
+    .modal-close:focus-visible{outline:none;box-shadow:var(--ring)}
+
+    .modal-body{padding:16px}
+
+    .toast-engine{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:5000;pointer-events:none;}
+    .toast{
+      pointer-events:none;
+      opacity:0;
+      transform:translateY(-6px) scale(.98);
+      transition:opacity 280ms ease, transform 280ms ease;
+      padding:12px 14px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      background:linear-gradient(135deg, rgba(124,58,237,.24), rgba(59,130,246,.12));
+      box-shadow:0 20px 60px rgba(0,0,0,.55);
+      color:rgba(255,255,255,.95);
+      font-weight:1000;
+      letter-spacing:.2px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      max-width:92vw;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .toast.active{opacity:1;transform:translateY(0) scale(1);transition:opacity 180ms ease, transform 180ms ease;}
+    .toast.fade-out{opacity:0;transform:translateY(-6px) scale(.98);transition:opacity 420ms ease, transform 420ms ease;}
+
+    @media (max-width: 992px){
+      .layout{grid-template-columns:1fr}
+      .sidebar{position:relative;top:auto}
+    }
+
+    /* =====================
+       Home hero typography fixes
+       ===================== */
+    .home-hero{
+      padding:28px 16px 22px;
+      border-radius:14px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+    }
+    .home-brand-title{
+      margin:0 0 10px;
+      font-weight:700;
+      font-size:clamp(28px,3.2vw,40px);
+      letter-spacing:0.4px;
+      line-height:1.1;
+    }
+    .home-tagline{
+      margin:0 0 18px;
+      color:rgba(255,255,255,.68);
+      font-weight:400;
+      font-size:clamp(14px,1.6vw,18px);
+      letter-spacing:.1px;
+    }
+    .home-center .panel-body{padding:0 !important}
+    .home-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 14px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.18);
+      color:rgba(255,255,255,.95);
+      font-weight:700;
+      font-size:.95rem;
+    }
+  </style>
 </head>
-<body class="admin-body">
-
-    <div class="admin-header">
-        <h1>Welcome back, <span>Boss! 👑</span></h1>
-        <p>Nutrition Haveli Live Business Monitor</p>
-    </div>
-    
-    <div class="dashboard-grid">
-        <!-- 📦 Live Order Logs Section -->
-        <div class="admin-card">
-            <h2>📦 Live Order Logs</h2>
-            <div id="order-logs-container">
-                <p class="empty-logs">No orders recorded in this session yet.</p>
-            </div>
+<body>
+  <div class="owner-bg">
+    <div class="app-shell">
+      <section class="topbar" aria-label="Top bar">
+        <div class="brand">
+          <h1>Nutrition Haveli</h1>
         </div>
 
-        <!-- 🛠️ Dynamic Inventory Section -->
-        <div class="admin-card">
-            <h2>🛠️ Dynamic Inventory</h2>
-            <p style="color: #666;">Product list management panel coming up next...</p>
-        </div>
+        <button id="recent-trash-access" class="trash-access" type="button" aria-label="Open trash modal">
+          <span class="icon" aria-hidden="true"><i class="fa-solid fa-trash-can"></i></span>
+          <span class="label">
+            <strong>Trash</strong>
+            <span>Restorable + purge</span>
+          </span>
+          <span id="trash-counter" class="counter" aria-label="Trash item count">0</span>
+        </button>
+      </section>
 
-        <!-- 📊 Metrics Tracker Section -->
-        <div class="admin-card">
-            <h2>📊 Metrics Tracker</h2>
-            <p style="color: #666;">Analytics and regular user detection loading...</p>
-        </div>
-    </div>
+      <section class="layout">
+        <aside class="sidebar" aria-label="Owner navigation">
+          <h2>Console Tabs</h2>
+          <nav class="nav-list" role="navigation">
+            <button class="nav-btn active" data-view="home" type="button" role="tab" aria-selected="true">
+              <span class="nav-icon" aria-hidden="true"><i class="fa-solid fa-house"></i></span>
+              <span class="nav-title">🏠 Home</span>
+              <!-- Live pill removed from Home tab per spec -->
+            </button>
 
-    <script>
-    (function () {
-        const STORAGE_KEY = 'nutrition_haveli_orders';
+            <button class="nav-btn" data-view="orders" type="button" role="tab" aria-selected="false">
+              <span class="nav-icon" aria-hidden="true"><i class="fa-solid fa-receipt"></i></span>
+              <span class="nav-title">📜 Live Order Logs</span>
+              <span class="nav-pill">Orders</span>
+            </button>
 
-        // 🔁 Redirect if opened as file:// to the same HTTP server as index.html (Live Server)
-        function redirectIfNeeded() {
-            try {
-                // If this page is loaded from file://, localStorage won't match the Live Server origin.
-                if (window.location.protocol === 'file:') {
-                    const host = location.hostname || '127.0.0.1';
-                    const port = '5500';
+            <button class="nav-btn" data-view="pending" type="button" role="tab" aria-selected="false">
+              <span class="nav-icon" aria-hidden="true"><i class="fa-solid fa-clock"></i></span>
+              <span class="nav-title">⏳ Pending Payments</span>
+              <span class="nav-pill">Pending</span>
+            </button>
 
-                    // If hostname is empty in some browsers, fall back to typical Live Server default.
-                    const target = `http://${host}:${port}/owner.html`;
+            <button class="nav-btn" data-view="paid" type="button" role="tab" aria-selected="false">
+              <span class="nav-icon" aria-hidden="true"><i class="fa-solid fa-circle-check"></i></span>
+              <span class="nav-title">✅ Complete Payments</span>
+              <span class="nav-pill">Cleared</span>
+            </button>
 
-                    // Preserve hash (if any)
-                    const hash = window.location.hash || '';
-                    window.location.replace(target + hash);
-                    return true;
-                }
-            } catch (e) {
-                console.warn('redirectIfNeeded failed:', e);
-            }
-            return false;
-        }
+            <button class="nav-btn" data-view="inventory" type="button" role="tab" aria-selected="false">
+              <span class="nav-icon" aria-hidden="true"><i class="fa-solid fa-warehouse"></i></span>
+              <span class="nav-title">🛠️ Dynamic Inventory</span>
+              <span class="nav-pill">Soon</span>
+            </button>
 
-        function setContainerMessage(message, isError) {
-            const container = document.getElementById('order-logs-container');
-            container.innerHTML = `
-                <p class="empty-logs" style="${isError ? 'color:#ff5a7a;' : ''}">${message}</p>
-            `;
-        }
+            <button class="nav-btn" data-view="metrics" type="button" role="tab" aria-selected="false">
+              <span class="nav-icon" aria-hidden="true"><i class="fa-solid fa-chart-column"></i></span>
+              <span class="nav-title">📊 Metrics Tracker</span>
+              <span class="nav-pill">Soon</span>
+            </button>
+          </nav>
+        </aside>
 
-        // 🔄 Function to fetch and display orders from local storage
-        function loadOrderLogs() {
-            const container = document.getElementById('order-logs-container');
-
-            let orders = [];
-            try {
-                orders = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-            } catch (e) {
-                console.error('Failed parsing storage orders:', e);
-            }
-
-            if (!orders.length) {
-                container.innerHTML = '<p class="empty-logs">No orders recorded yet. Make a test order!</p>';
-                return;
-            }
-
-            container.innerHTML = orders
-                .map((order, index) => `
-                    <div class="order-item">
-                        <div class="order-meta">📅 ${order.dateTime} | Order #${orders.length - index}</div>
-                        <div class="order-customer">👤 Name: ${order.customerName}</div>
-                        <div class="order-meta">📞 Phone: ${order.customerPhone}</div>
-                        <div class="order-meta">📍 Address: ${order.customerAddress}</div>
-                        <div class="order-details">📦 <strong>Products:</strong> ${order.items}</div>
-                        <div class="order-total">💰 Total Amount: ${order.grandTotal}</div>
+        <main>
+          <section id="view-home" class="view active" data-view="home" aria-label="Home view">
+            <div class="panel">
+              <div class="home-center">
+                <div class="panel-body" style="width:100%">
+                  <div class="home-hero">
+                    <div>
+                      <h2 class="home-brand-title">Nutrition Haveli</h2>
+                      <p class="home-tagline">Your Trusted Fitness Supplement Partner</p>
+                      <div class="home-badge" aria-label="Owner Console badge">
+                        <i class="fa-solid fa-user-shield" aria-hidden="true"></i>
+                        <span>Owner Console</span>
+                      </div>
                     </div>
-                `)
-                .join('');
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="view-orders" class="view" data-view="orders" aria-label="Live order logs">
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title"><i class="fa-solid fa-receipt"></i> Live Order Logs</div>
+              </div>
+              <div class="panel-body">
+                <div id="orders-container" class="orders" aria-live="polite"></div>
+                <div id="orders-empty" class="empty" style="display:none;">No live orders found. Place a test order from the store UI to see logs.</div>
+              </div>
+            </div>
+          </section>
+
+          <section id="view-pending" class="view" data-view="pending" aria-label="Pending payments">
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title"><i class="fa-solid fa-clock"></i> Pending Payments</div>
+              </div>
+              <div class="panel-body">
+                <div id="pending-container" class="orders-grid" aria-live="polite"></div>
+                <div id="pending-empty" class="empty" style="display:none;">No pending payments found.</div>
+              </div>
+            </div>
+          </section>
+
+          <section id="view-paid" class="view" data-view="paid" aria-label="Complete payments">
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title"><i class="fa-solid fa-circle-check"></i> Complete Payments</div>
+              </div>
+              <div class="panel-body">
+                <div id="paid-container" class="orders-grid" aria-live="polite"></div>
+                <div id="paid-empty" class="empty" style="display:none;">No complete payments found.</div>
+              </div>
+            </div>
+          </section>
+
+          <section id="view-inventory" class="view" data-view="inventory" aria-label="Dynamic inventory">
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title"><i class="fa-solid fa-warehouse"></i> Dynamic Inventory</div>
+              </div>
+              <div class="panel-body">
+                <div class="empty">Inventory tab is scaffolded for future implementation.</div>
+              </div>
+            </div>
+          </section>
+
+          <section id="view-metrics" class="view" data-view="metrics" aria-label="Metrics tracker">
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title"><i class="fa-solid fa-chart-column"></i> Metrics Tracker</div>
+              </div>
+              <div class="panel-body">
+                <div class="empty">Metrics tab is scaffolded for future implementation.</div>
+              </div>
+            </div>
+          </section>
+        </main>
+      </section>
+    </div>
+  </div>
+
+  <div class="toast-engine" aria-live="polite" aria-atomic="true">
+    <div id="global-toast" class="toast" role="status"></div>
+  </div>
+
+  <div id="recent-trash-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Trash modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="title"><i class="fa-solid fa-trash-can"></i> Trash • Last 60 Days</div>
+        <button class="modal-close" type="button" data-modal-close aria-label="Close modal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="empty">Trash UI is not fully implemented in this build.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =============================
+    // STATE (localStorage channels)
+    // =============================
+    const LS_ORDERS   = 'nutrition_haveli_orders';
+    const LS_PENDING = 'nutrition_haveli_pending';
+    const LS_PAID    = 'nutrition_haveli_paid';
+    const LS_TRASH   = 'nutrition_haveli_trash';
+
+    let orders = safeParse(LS_ORDERS, []);
+    let pendingOrders = safeParse(LS_PENDING, []);
+    let paidOrders = safeParse(LS_PAID, []);
+    let trashOrders = safeParse(LS_TRASH, []);
+
+    orders = normalizeOrderArray(orders);
+    pendingOrders = normalizeOrderArray(pendingOrders);
+    paidOrders = normalizeOrderArray(paidOrders);
+    trashOrders = normalizeOrderArray(trashOrders);
+
+    // =============================
+    // UTIL
+    // =============================
+    function safeParse(key, fallback){
+      try{
+        const raw = localStorage.getItem(key);
+        if(!raw) return fallback;
+        const v = JSON.parse(raw);
+        return Array.isArray(v) ? v : fallback;
+      } catch { return fallback; }
+    }
+
+    function normalizeOrderArray(arr){
+      if(!Array.isArray(arr)) return [];
+      return arr.filter(x => x && typeof x === 'object');
+    }
+
+    function parseId(raw){
+      if(raw === undefined || raw === null) return null;
+      const s = String(raw);
+      const n = parseInt(s, 10);
+      return Number.isFinite(n) ? n : s;
+    }
+
+    function formatINR(n){
+      const num = Number(n) || 0;
+      return '₹' + num.toLocaleString('en-IN');
+    }
+
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll('&','&amp;')
+        .replaceAll('<','<')
+        .replaceAll('>','>')
+        .replaceAll('"','"')
+        .replaceAll("'",'&#039;');
+    }
+
+    // =============================
+    // REGEX PARSING ENGINE (FIXED)
+    // Robust total math based on capturing ALL Qty and ALL ₹ values.
+    // =============================
+    function parseINRPrice(raw){
+      if(raw === undefined || raw === null) return 0;
+      const cleaned = String(raw).replace(/[^0-9]/g,'');
+      const n = parseInt(cleaned,10);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function calculateOrderTotal(items) {
+      const text = Array.isArray(items) ? items.join(',') : (items ? String(items) : '');
+      const full = String(text || '');
+
+      // Capture all quantities in order
+      const qtys = Array.from(full.matchAll(/Qty:\s*(\d+)/gi)).map(m => parseInt(m[1],10));
+
+      // Capture all prices (supports ₹ 1,234 or ₹1234)
+      const prices = Array.from(full.matchAll(/₹\s*([0-9]{1,3}(?:,[0-9]{3})*|\d+)/g)).map(m => parseINRPrice(m[1]));
+
+      // Primary: pair by index
+      const len = Math.min(qtys.length, prices.length);
+      if(len > 0){
+        let total = 0;
+        for(let i=0;i<len;i++) total += (Number(qtys[i])||0) * (Number(prices[i])||0);
+        // If we extracted something meaningful, return.
+        if(total > 0 || len > 1) return total;
+      }
+
+      // Fallback: attempt to find repeating Qty/₹ pairs anywhere and multiply within same vicinity
+      // This handles cases where the items string includes additional text.
+      const pairMatches = [];
+      const re = /Qty:\s*(\d+)[^₹]{0,80}₹\s*([0-9]{1,3}(?:,[0-9]{3})*|\d+)/gi;
+      let m;
+      while((m = re.exec(full))){
+        const q = parseInt(m[1],10);
+        const p = parseINRPrice(m[2]);
+        if(Number.isFinite(q) && Number.isFinite(p)) pairMatches.push(q*p);
+      }
+      if(pairMatches.length) return pairMatches.reduce((a,b)=>a+b,0);
+
+      return 0;
+    }
+
+    // =============================
+    // ORDER TOTAL EXTRACTION
+    // =============================
+    function getOrderTotal(o){
+      if(o.grandTotal !== undefined && o.grandTotal !== null){
+        const n = Number(String(o.grandTotal).replace(/[^0-9]/g,''));
+        if(Number.isFinite(n)) return n;
+      }
+      if(o.total !== undefined && o.total !== null){
+        const n = Number(o.total);
+        if(Number.isFinite(n)) return n;
+      }
+      if(o.items !== undefined) return calculateOrderTotal(o.items);
+      if(o.itemsList !== undefined) return calculateOrderTotal(o.itemsList);
+      if(o.items_str !== undefined) return calculateOrderTotal(o.items_str);
+      return calculateOrderTotal(o.items);
+    }
+
+    function ensureId(o, idx){
+      if(o.id === undefined || o.id === null) o.id = idx;
+      o.id = parseId(o.id);
+      return o;
+    }
+
+    // =============================
+    // TOAST
+    // =============================
+    function showToast(msg){
+      const toast = document.getElementById('global-toast');
+      if(!toast) return;
+      toast.textContent = msg;
+      toast.classList.remove('fade-out');
+      toast.classList.add('active');
+      window.clearTimeout(showToast.__t);
+      showToast.__t = window.setTimeout(() => {
+        toast.classList.add('fade-out');
+        window.setTimeout(() => toast.classList.remove('active','fade-out'), 450);
+      }, 1700);
+    }
+
+    // =============================
+    // CENTRAL SYNC + RENDER
+    // =============================
+    function commitStateToDisk(msg) {
+      localStorage.setItem(LS_ORDERS, JSON.stringify(orders));
+      localStorage.setItem(LS_PENDING, JSON.stringify(pendingOrders));
+      localStorage.setItem(LS_PAID, JSON.stringify(paidOrders));
+      localStorage.setItem(LS_TRASH, JSON.stringify(trashOrders));
+
+      if (msg) showToast(msg);
+      renderOrders();
+      updateTrashCounter();
+    }
+
+    function updateTrashCounter(){
+      const el = document.getElementById('trash-counter');
+      if(el) el.textContent = String(trashOrders.length || 0);
+    }
+
+    // =============================
+    // RENDER
+    // =============================
+    function extractCustomerName(o){
+      return (o.customerName || o.customer || o.name || o.customer_name || 'Guest Customer').toString();
+    }
+
+    function extractCustomerMeta(o){
+      const phone = o.customerPhone || o.phone || o.customer_phone || '';
+      const address = o.customerAddress || o.address || o.customer_address || '';
+      return { phone, address };
+    }
+
+    function renderOrderCard(o, mode){
+      const id = o.id;
+      const customerName = extractCustomerName(o);
+      const { phone, address } = extractCustomerMeta(o);
+
+      const itemsArrOrStr = (o.items !== undefined ? o.items : (o.itemsList !== undefined ? o.itemsList : ''));
+      const itemsText = Array.isArray(itemsArrOrStr) ? itemsArrOrStr.join(', ') : (itemsArrOrStr ? String(itemsArrOrStr) : '');
+      const total = getOrderTotal(o);
+
+      const pendingAmount = Number(o.pendingAmount || 0);
+
+      // Meta badge: remove redundant "Live" chip next to timestamp.
+      let badge = null;
+      if(mode === 'pending'){
+        badge = { text: `🟡 Pending: ${formatINR(pendingAmount)}`, cls: 'status-warn' };
+      } else if(mode === 'paid'){
+        badge = { text: '✅ Cleared', cls: 'status-ok' };
+      }
+
+      const card = document.createElement('div');
+      card.className = 'order-card';
+      card.dataset.orderId = String(id);
+
+      const actionWrap = document.createElement('div');
+      actionWrap.className = 'order-layout';
+
+      const left = document.createElement('div');
+      left.className = 'order-left';
+
+      const meta = document.createElement('div');
+      meta.className = 'order-meta';
+      const time = o.dateTime || o.date || o.createdAt || '';
+
+      const timeSpan = `<span><i class="fa-solid fa-clock"></i> ${escapeHtml(time || '—')}</span>`;
+      const badgeSpan = badge ? `<span class="status-badge ${badge.cls}">${escapeHtml(badge.text)}</span>` : '';
+      meta.innerHTML = timeSpan + badgeSpan;
+
+      const cust = document.createElement('div');
+      cust.className = 'order-customer';
+      cust.textContent = customerName;
+
+      const details = document.createElement('div');
+      details.className = 'order-details';
+
+      const row1 = document.createElement('div');
+      row1.className = 'row';
+      row1.innerHTML = `<span class="k">Phone</span><span class="v">${escapeHtml(phone || '—')}</span>`;
+
+      const row2 = document.createElement('div');
+      row2.className = 'row';
+      row2.innerHTML = `<span class="k">Address</span><span class="v">${escapeHtml(address || '—')}</span>`;
+
+      details.appendChild(row1);
+      details.appendChild(row2);
+
+      // Items label restored + items listing array text
+      const itemsLabel = document.createElement('div');
+      itemsLabel.className = 'row';
+      itemsLabel.innerHTML = `<span class="k">Items:</span><span class="v" style="white-space:pre-wrap;">${escapeHtml(itemsText || '—')}</span>`;
+
+      details.appendChild(itemsLabel);
+
+      left.appendChild(meta);
+      left.appendChild(cust);
+      left.appendChild(details);
+
+      // Right actions/buttons per mode
+      const actions = document.createElement('div');
+      actions.className = 'order-right-actions';
+
+      if(mode === 'orders'){
+        const btnClear = document.createElement('button');
+        btnClear.type = 'button';
+        btnClear.className = 'pay-action-btn pay-clear';
+        btnClear.setAttribute('onclick', `window.handleClearPayment(${JSON.stringify(id)})`);
+        btnClear.innerHTML = `<i class="fa-solid fa-circle-check"></i><span>Clear Payment</span>`;
+
+        const btnPending = document.createElement('button');
+        btnPending.type = 'button';
+        btnPending.className = 'pay-action-btn pay-pending';
+        btnPending.setAttribute('onclick', `window.handlePendingPayment(${JSON.stringify(id)})`);
+        btnPending.innerHTML = `<i class="fa-solid fa-clock"></i><span>Pending Payment</span>`;
+
+        actions.appendChild(btnClear);
+        actions.appendChild(btnPending);
+      } else if(mode === 'pending'){
+        const btnClear = document.createElement('button');
+        btnClear.type = 'button';
+        btnClear.className = 'pay-action-btn pay-clear';
+        btnClear.setAttribute('onclick', `window.handleClearPayment(${JSON.stringify(id)})`);
+        btnClear.innerHTML = `<i class="fa-solid fa-circle-check"></i><span>Clear Payment</span>`;
+        actions.appendChild(btnClear);
+      } else if(mode === 'paid'){
+        // no action buttons in paid view beyond the cleared badge
+      }
+
+      actionWrap.appendChild(left);
+      actionWrap.appendChild(actions);
+
+      // Purple summary strip label must be "Grand Total"
+      const totalEl = document.createElement('div');
+      totalEl.className = 'order-total';
+      totalEl.innerHTML = `
+        <span class="label">Grand Total</span>
+        <span class="value">${formatINR(total)}</span>
+      `;
+
+      // Trash is OUTSIDE and separate from price strip.
+      const trashBtn = document.createElement('button');
+      trashBtn.type = 'button';
+      trashBtn.className = 'trash-order-btn';
+      trashBtn.setAttribute('onclick', `window.handleMoveToTrash(${JSON.stringify(id)})`);
+      trashBtn.setAttribute('aria-label', `Move order ${id} to trash`);
+      trashBtn.innerHTML = `<i class="fa-solid fa-trash-can"></i>`;
+
+      card.appendChild(actionWrap);
+      card.appendChild(totalEl);
+      card.appendChild(trashBtn);
+
+      return card;
+    }
+
+    function setActiveView(viewKey){
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        const isActive = btn.dataset.view === viewKey;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+      document.querySelectorAll('.view').forEach(v => {
+        const isActive = v.dataset.view === viewKey;
+        v.classList.toggle('active', isActive);
+      });
+    }
+
+    function renderOrders(){
+      orders.forEach(ensureId);
+      pendingOrders.forEach(ensureId);
+      paidOrders.forEach(ensureId);
+      trashOrders.forEach(ensureId);
+
+      const ordersWrap = document.getElementById('orders-container');
+      const ordersEmpty = document.getElementById('orders-empty');
+      if(ordersWrap){
+        ordersWrap.innerHTML = '';
+        const list = orders;
+        if(!list.length){
+          if(ordersEmpty) ordersEmpty.style.display = 'block';
+        } else {
+          if(ordersEmpty) ordersEmpty.style.display = 'none';
+          list.forEach(o => ordersWrap.appendChild(renderOrderCard(o, 'orders')));
         }
+      }
 
-        function startLivePolling() {
-            // Re-render frequently so new orders appear without refresh.
-            // (You can increase/decrease interval as needed.)
-            const intervalMs = 1500;
-
-            // First render
-            loadOrderLogs();
-
-            // Then poll
-            setInterval(() => {
-                try {
-                    loadOrderLogs();
-                } catch (e) {
-                    console.warn('Polling loadOrderLogs failed:', e);
-                }
-            }, intervalMs);
+      const pendingWrap = document.getElementById('pending-container');
+      const pendingEmpty = document.getElementById('pending-empty');
+      if(pendingWrap){
+        pendingWrap.innerHTML = '';
+        const list = pendingOrders.filter(o => Number(o.pendingAmount || 0) > 0);
+        if(!list.length){
+          if(pendingEmpty) pendingEmpty.style.display = 'block';
+        } else {
+          if(pendingEmpty) pendingEmpty.style.display = 'none';
+          list.forEach(o => pendingWrap.appendChild(renderOrderCard(o, 'pending')));
         }
+      }
 
-        // Entry
-        const redirected = redirectIfNeeded();
-        if (!redirected) {
-            // If still file:// (redirect blocked), show actionable info.
-            if (window.location.protocol === 'file:') {
-                setContainerMessage(
-                    'Open owner.html using Live Server on the same port as index.html so localStorage sync works (e.g. http://127.0.0.1:5500/owner.html).',
-                    true
-                );
-                return;
-            }
-
-            window.addEventListener('DOMContentLoaded', startLivePolling);
-            // In case DOMContentLoaded already fired
-            if (document.readyState === 'complete' || document.readyState === 'interactive') {
-                startLivePolling();
-            }
+      const paidWrap = document.getElementById('paid-container');
+      const paidEmpty = document.getElementById('paid-empty');
+      if(paidWrap){
+        paidWrap.innerHTML = '';
+        const list = paidOrders;
+        if(!list.length){
+          if(paidEmpty) paidEmpty.style.display = 'block';
+        } else {
+          if(paidEmpty) paidEmpty.style.display = 'none';
+          list.forEach(o => paidWrap.appendChild(renderOrderCard(o, 'paid')));
         }
-    })();
-</script>
+      }
+
+      updateTrashCounter();
+    }
+
+    // =============================
+    // WINDOW BINDINGS
+    // =============================
+    window.handleClearPayment = function(id){
+      id = parseId(id);
+      let target = orders.find(o => o.id === id) || pendingOrders.find(o => o.id === id);
+      if(!target) return;
+
+      target.paymentStatus = 'Done';
+      target.pendingAmount = 0;
+
+      if(!paidOrders.some(o => o.id === id)) paidOrders.push(target);
+
+      orders = orders.filter(o => o.id !== id);
+      pendingOrders = pendingOrders.filter(o => o.id !== id);
+
+      commitStateToDisk('🟢 Payment marked as Done!');
+    };
+
+    window.handlePendingPayment = function(id){
+      id = parseId(id);
+      let target = orders.find(o => o.id === id) || paidOrders.find(o => o.id === id);
+      if(!target) return;
+
+      const amtRaw = prompt('Enter Pending Amount (₹):');
+      if(amtRaw === null) return;
+      const amtStr = String(amtRaw).trim();
+      if(!amtStr) return;
+
+      const parsedAmt = parseInt(amtStr.replace(/[^0-9]/g,''), 10);
+      if(!Number.isFinite(parsedAmt) || parsedAmt <= 0){
+        alert('Invalid entry.');
+        return;
+      }
+
+      target.paymentStatus = 'Pending';
+      target.pendingAmount = parsedAmt;
+
+      if(!pendingOrders.some(o => o.id === id)) pendingOrders.push(target);
+
+      orders = orders.filter(o => o.id !== id);
+      paidOrders = paidOrders.filter(o => o.id !== id);
+
+      commitStateToDisk('🟡 Pending Amount Registered!');
+    };
+
+    window.handleMoveToTrash = function(id){
+      id = parseId(id);
+      let target = orders.find(o => o.id === id)
+        || paidOrders.find(o => o.id === id)
+        || pendingOrders.find(o => o.id === id);
+
+      if(!target) return;
+
+      const isCleared = target.paymentStatus === 'Done';
+      target.trashMetadata = isCleared
+        ? 'Cleared'
+        : `Pending (₹${Number(target.pendingAmount || 0)})`;
+
+      if(!trashOrders.some(o => o.id === id)) trashOrders.push(target);
+
+      orders = orders.filter(o => o.id !== id);
+      paidOrders = paidOrders.filter(o => o.id !== id);
+      pendingOrders = pendingOrders.filter(o => o.id !== id);
+
+      commitStateToDisk('🔴 Order Shifted to Trash.');
+    };
+
+    // =============================
+    // TAB ROUTING
+    // =============================
+    function initTabs(){
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const view = btn.dataset.view;
+          setActiveView(view);
+          renderOrders();
+        });
+      });
+    }
+
+    // =============================
+    // TRASH MODAL (basic)
+    // =============================
+    function initTrashModal(){
+      const openBtn = document.getElementById('recent-trash-access');
+      const modal = document.getElementById('recent-trash-modal');
+      if(!openBtn || !modal) return;
+
+      openBtn.addEventListener('click', () => {
+        modal.classList.add('active');
+      });
+
+      document.querySelectorAll('[data-modal-close]').forEach(x => {
+        x.addEventListener('click', () => modal.classList.remove('active'));
+      });
+
+      modal.addEventListener('click', (e) => {
+        if(e.target === modal) modal.classList.remove('active');
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') modal.classList.remove('active');
+      });
+    }
+
+    // =============================
+    // INIT
+    // =============================
+    document.addEventListener('DOMContentLoaded', () => {
+      initTabs();
+      initTrashModal();
+      updateTrashCounter();
+      renderOrders();
+
+      window.addEventListener('storage', (e) => {
+        if(!e || !e.key) return;
+        if([LS_ORDERS, LS_PENDING, LS_PAID, LS_TRASH].includes(e.key)){
+          orders = safeParse(LS_ORDERS, []);
+          pendingOrders = safeParse(LS_PENDING, []);
+          paidOrders = safeParse(LS_PAID, []);
+          trashOrders = safeParse(LS_TRASH, []);
+          orders = normalizeOrderArray(orders);
+          pendingOrders = normalizeOrderArray(pendingOrders);
+          paidOrders = normalizeOrderArray(paidOrders);
+          trashOrders = normalizeOrderArray(trashOrders);
+          renderOrders();
+        }
+      });
+    });
+  </script>
 </body>
 </html>
+
