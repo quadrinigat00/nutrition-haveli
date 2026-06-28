@@ -841,10 +841,10 @@
             <button class="nav-btn" data-view="inventory" type="button" role="tab" aria-selected="false">
               <span class="nav-icon" aria-hidden="true"><i class="fa-solid fa-warehouse"></i></span>
               <span class="nav-title">🛠️ Dynamic Inventory</span>
-              <span class="nav-pill">Soon</span>
+              <span class="nav-pill">Inventory</span>
             </button>
 
-            <button class="nav-btn" data-view="metrics" type="button" role="tab" aria-selected="false">
+            <button class="nav-btn" data-view="metrics"
               <span class="nav-icon" aria-hidden="true"><i class="fa-solid fa-chart-column"></i></span>
               <span class="nav-title">📊 Metrics Tracker</span>
               <span class="nav-pill">Soon</span>
@@ -935,7 +935,7 @@
     </div>
   </div>
 
-  <div class="toast-engine" aria-live="polite" aria-atomic="true">
+        <div class="toast-engine" aria-live="polite" aria-atomic="true">
     <div id="global-toast" class="toast" role="status"></div>
   </div>
 
@@ -1636,8 +1636,9 @@
     // INVENTORY CRUD (Dynamic Inventory) - ONLY affects inventory view
     // =============================
     const LS_INVENTORY = 'nutrition_haveli_inventory_products';
+    const LS_INVENTORY_MASTER = 'inventoryProducts';
 
-    let inventoryProducts = safeParse(LS_INVENTORY, []);
+    let inventoryProducts = safeParse(LS_INVENTORY_MASTER, []);
 
     const DEFAULT_FEATURES = () => ({
       authenticity: '',
@@ -1645,6 +1646,7 @@
       ingredients: '',
       expiryDetails: ''
     });
+
 
     function ensureInventoryProductShape(p){
       if(!p || typeof p !== 'object') return null;
@@ -1781,8 +1783,10 @@
     }
 
     function saveInventoryProducts(){
-      localStorage.setItem(LS_INVENTORY, JSON.stringify(inventoryProducts));
+      // Master-database commit (Requirement #1)
+      localStorage.setItem(LS_INVENTORY_MASTER, JSON.stringify(inventoryProducts));
     }
+
 
     function openInventoryModal(mode, product){
       // mode: 'add' | 'edit'
@@ -1832,12 +1836,14 @@
               <input id="inv-stock" type="number" min="0" step="1" value="${escapeHtml(stockVal)}" placeholder="Quantity" />
             </div>
             <div class="inv-field full">
-              <label for="inv-image">Image URL</label>
-              <input id="inv-image" type="url" value="${escapeHtml(imageVal)}" placeholder="Image link" />
+              <label for="inv-image">Image</label>
+              <input id="inv-image" type="file" accept="image/*" />
+              <input id="inv-image-link" type="hidden" value="${escapeHtml(imageVal)}" />
             </div>
-          <div class="inv-field full">
-              <label for="inv-video">Video URL</label>
-              <input id="inv-video" type="url" value="${escapeHtml(videoVal)}" placeholder="Video link" />
+            <div class="inv-field full">
+              <label for="inv-video">Video</label>
+              <input id="inv-video" type="file" accept="video/*" />
+              <input id="inv-video-link" type="hidden" value="${escapeHtml(videoVal)}" />
             </div>
             <div class="inv-field full" style="display:none;">
               <label for="inv-details-hidden">Features (hidden)</label>
@@ -1852,7 +1858,7 @@
 
           <div id="inventory-form-actions">
             <button class="inv-cancel-btn" type="button" data-inv-modal-close>Cancel</button>
-            <button class="inv-save-btn" type="button" id="inv-save-btn">${escapeHtml(isEdit ? 'Save Changes' : 'Add Product')}</button>
+          <button class="inv-save-btn" type="button" id="inv-save-btn">${escapeHtml(isEdit ? 'Save Changes' : 'Add Product')}</button>
           </div>
         </div>
       `;
@@ -1882,14 +1888,45 @@
         }
       });
 
-          saveBtn.addEventListener('click', () => {
+          saveBtn.addEventListener('click', async () => {
         const name = (document.getElementById('inv-name')?.value || '').trim();
         const category = (document.getElementById('inv-category')?.value || '').trim();
         const price = Number(document.getElementById('inv-price')?.value || 0);
         const stockQuantity = Number(document.getElementById('inv-stock')?.value || 0);
-        const imageLink = (document.getElementById('inv-image')?.value || '').trim();
-        const videoLink = (document.getElementById('inv-video')?.value || '').trim();
         const details = (document.getElementById('inv-details')?.value || '').trim();
+
+        const readAsDataURL = (file) => new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result || ''));
+          reader.onerror = () => reject(new Error('Failed reading file'));
+          reader.readAsDataURL(file);
+        });
+
+        const imageInput = document.getElementById('inv-image');
+        const videoInput = document.getElementById('inv-video');
+        const imageHidden = document.getElementById('inv-image-link');
+        const videoHidden = document.getElementById('inv-video-link');
+
+        let imageLink = (imageHidden?.value || '').trim();
+        let videoLink = (videoHidden?.value || '').trim();
+
+        if(imageInput?.files && imageInput.files[0]){
+          try{
+            imageLink = await readAsDataURL(imageInput.files[0]);
+          } catch {
+            alert('Failed to read selected image.');
+            return;
+          }
+        }
+
+        if(videoInput?.files && videoInput.files[0]){
+          try{
+            videoLink = await readAsDataURL(videoInput.files[0]);
+          } catch {
+            alert('Failed to read selected video.');
+            return;
+          }
+        }
 
         // Ensure feature fields exist so the product object natively holds them.
         // They will be edited later by the client-side arrays syncing framework.
@@ -1932,10 +1969,12 @@
         }
 
         inventoryProducts = inventoryProducts.map(ensureInventoryProductShape).filter(Boolean);
+        // Master-commit for Add/Edit (Requirement #1)
         saveInventoryProducts();
         close();
         renderInventoryView();
       });
+
     }
 
     function ensureInventoryModalNodes(){
@@ -2062,8 +2101,10 @@
             const ok = confirm(`Delete "${p.name}"?`);
             if(!ok) return;
             inventoryProducts = inventoryProducts.filter(x => parseId(x.id) !== id);
+            // Master-commit for Delete (Requirement #1)
             saveInventoryProducts();
             renderInventoryView();
+
           }
         });
       });
@@ -2109,12 +2150,15 @@
           trashOrders = normalizeOrderArray(trashOrders);
           renderOrders();
         }
-        if(e.key === LS_INVENTORY){
-          inventoryProducts = safeParse(LS_INVENTORY, []);
+        if(e.key === LS_INVENTORY || e.key === LS_INVENTORY_MASTER){
+          // Always rehydrate from whichever channel changed.
+          const srcKey = (e.key === LS_INVENTORY_MASTER) ? LS_INVENTORY_MASTER : LS_INVENTORY;
+          inventoryProducts = safeParse(srcKey, []);
           inventoryProducts = inventoryProducts.map(ensureInventoryProductShape).filter(Boolean);
           const invActive = document.querySelector('.view[data-view="inventory"]')?.classList.contains('active');
           if(invActive) renderInventoryView();
         }
+
       });
     });
   </script>

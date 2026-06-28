@@ -26,7 +26,11 @@ document.addEventListener('DOMContentLoaded', function() {
     updateCurrentYear();
     initLazyLoading();
     initHeroCinematicAnimation();
+
+    // Render dynamic products first, so initProductsEnhancements can bind handlers.
+    renderInventoryProductsToGrid();
     initProductsEnhancements();
+
     initInteractiveCards();
 });
 
@@ -668,6 +672,94 @@ function initInteractiveCards() {
    PRODUCTS UI ENHANCEMENTS
    ============================================ */
 
+function renderInventoryProductsToGrid() {
+    const grid = document.querySelector('#products-grid') || document.querySelector('.products-grid');
+    if (!grid) return;
+
+    const raw = localStorage.getItem('inventoryProducts');
+    if (!raw) return;
+
+    let products;
+    try {
+        products = JSON.parse(raw);
+    } catch (e) {
+        console.error('Failed to parse inventoryProducts from localStorage', e);
+        return;
+    }
+
+    if (!Array.isArray(products)) return;
+
+    // Clear existing (server-rendered) cards
+    grid.innerHTML = '';
+
+    const escapeHtml = (str) => String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '<')
+        .replace(/>/g, '>')
+        .replace(/"/g, '"')
+        .replace(/'/g, '&#039;');
+
+    // Category-wise rendering (preserves existing product-card structure)
+    const byCategory = new Map();
+    products.forEach((p, idx) => {
+        const category = (p.category || 'Uncategorized').toString();
+        if (!byCategory.has(category)) byCategory.set(category, []);
+        byCategory.get(category).push({ p, idx });
+    });
+
+    const categoryOrder = Array.from(byCategory.keys());
+    categoryOrder.forEach((cat) => {
+        // Inject a heading before the group's cards
+        const heading = document.createElement('div');
+        heading.className = 'product-category-heading';
+        heading.style.gridColumn = '1 / -1';
+        heading.style.marginTop = '18px';
+        heading.style.marginBottom = '6px';
+        heading.style.fontWeight = '1000';
+        heading.style.color = 'rgba(255,255,255,.92)';
+        heading.style.letterSpacing = '.2px';
+        heading.textContent = cat;
+        grid.appendChild(heading);
+
+        byCategory.get(cat).forEach(({ p, idx }) => {
+            const id = p.id ?? p.key ?? p.productId ?? p._id ?? `inv-${idx}`;
+            const name = p.name ?? p.title ?? `Product ${idx + 1}`;
+            const desc = p.description ?? p.details ?? p.desc ?? '';
+
+            // Multi-image: prefer first image from imageLinks
+            const imageLinks = Array.isArray(p.imageLinks) ? p.imageLinks : null;
+            const imageLink = (imageLinks && imageLinks.length ? imageLinks[0] : (p.imageLink ?? p.image ?? p.img ?? ''));
+
+            const badgeText = p.badge ?? (idx === 0 ? 'Best Seller' : '');
+
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            card.dataset.productId = String(id);
+
+            const cardPriceAnchorText = `I want to buy ${name}`;
+
+            card.innerHTML = `
+                <div class="product-image">
+                    <img src="${escapeHtml(imageLink)}" alt="${escapeHtml(name)}" onerror="this.style.display='none';" />
+                    ${badgeText ? `<span class="product-badge">${escapeHtml(badgeText)}</span>` : ''}
+                </div>
+                <div class="product-info">
+                    <h3 class="product-name">${escapeHtml(name)}</h3>
+                    <p class="product-desc">${escapeHtml(desc)}</p>
+                    <a href="https://wa.me/919827676474?text=${encodeURIComponent(cardPriceAnchorText)}" class="btn btn-product" target="_blank" rel="noopener noreferrer">
+                        <i class="fab fa-whatsapp"></i>
+                        <span>Order Now</span>
+                    </a>
+                </div>
+            `;
+
+            grid.appendChild(card);
+        });
+    });
+}
+
+
+
 function initProductsEnhancements() {
     const productsSection = document.querySelector('#products');
     if (!productsSection) return;
@@ -873,24 +965,50 @@ function initProductsEnhancements() {
         const img = card.querySelector('.product-image img');
         const imgSrc = img?.getAttribute('src') || '';
         const imgAlt = img?.getAttribute('alt') || name;
-        const key = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+        const productId = card.dataset.productId;
+        const key = productId ? `inv-${productId}` : name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+        const raw = localStorage.getItem('inventoryProducts');
+        let inv = null;
+        try {
+            inv = raw ? JSON.parse(raw) : null;
+        } catch {
+            inv = null;
+        }
+
+        const found = Array.isArray(inv)
+            ? inv.find(
+                (x) => String(x.id) === String(productId) || (productId && x.productId && String(x.productId) === String(productId))
+            )
+            : null;
+
+        const description = found?.description ?? found?.details ?? desc;
+
+        const benefitsArr = Array.isArray(found?.benefits)
+            ? found.benefits
+            : Array.isArray(found?.benefitsList)
+                ? found.benefitsList
+                : null;
+
+        const benefitsList = benefitsArr && benefitsArr.length
+            ? benefitsArr.slice(0, 3)
+            : [
+                'Supports performance & recovery',
+                'Quality ingredients for consistent results',
+                'Designed for everyday gym progress'
+            ];
+
+        // Keep existing synthetic pricing logic untouched to avoid breaking checkout/cart flows.
         const base = 999 + idx * 250;
         const mrp = base + 350;
         const market = base;
         const our = Math.max(199, Math.round(base * 0.74));
-        const benefitsList = [
-            'Supports performance & recovery',
-            'Quality ingredients for consistent results',
-            'Designed for everyday gym progress'
-        ];
 
-        if (idx % 2 === 1) {
-            benefitsList.unshift('Helps improve strength & stamina');
-            benefitsList.pop();
-        }
-
-        return { key, name, desc, imgSrc, imgAlt, mrp, market, our, benefitsList };
+        return { key, name, desc: description, imgSrc, imgAlt, mrp, market, our, benefitsList };
     }
+
+
 
     function updateHeaderBadges() {
         const cartBadge = document.querySelector('[data-cart-badge]');
