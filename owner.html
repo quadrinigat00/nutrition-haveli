@@ -522,6 +522,274 @@
       font-weight:700;
       font-size:.95rem;
     }
+
+    /* ============================
+       Inventory (CRUD) styles
+       Scoped to #inventory-view
+       ============================ */
+    #inventory-view .inv-topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin:6px 0 14px;
+      flex-wrap:wrap;
+    }
+
+    #inventory-view .inv-add-btn{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.05);
+      color:rgba(255,255,255,.95);
+      font-weight:1000;
+      letter-spacing:.2px;
+      transition:transform var(--t), background var(--t), border-color var(--t);
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      cursor:pointer;
+      user-select:none;
+    }
+    #inventory-view .inv-add-btn:hover{transform:translateY(-1px);border-color:rgba(255,255,255,.18);background:rgba(255,255,255,.09)}
+    #inventory-view .inv-add-btn:focus-visible{outline:none;box-shadow:var(--ring)}
+
+    #inventory-view .inv-table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      overflow:hidden;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(0,0,0,.14);
+    }
+
+    #inventory-view .inv-thead th{
+      text-align:left;
+      font-size:.85rem;
+      color:rgba(255,255,255,.72);
+      font-weight:1000;
+      letter-spacing:.2px;
+      padding:12px 12px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.02);
+      white-space:nowrap;
+    }
+
+    #inventory-view .inv-row td{
+      padding:12px 12px;
+      vertical-align:middle;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      color:rgba(255,255,255,.90);
+      font-weight:700;
+    }
+
+    #inventory-view .inv-row:last-child td{border-bottom:none}
+
+    #inventory-view .inv-img{
+      width:54px;
+      height:54px;
+      border-radius:12px;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.04);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    #inventory-view .inv-img img{width:100%;height:100%;object-fit:cover}
+
+    #inventory-view .inv-cat{color:rgba(255,255,255,.78);font-weight:900}
+    #inventory-view .inv-price{color:rgba(255,255,255,.98);font-weight:1000}
+    #inventory-view .inv-stock{font-weight:1000}
+
+    #inventory-view .inv-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    #inventory-view .inv-action-btn{
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.05);
+      color:rgba(255,255,255,.95);
+      font-weight:1000;
+      letter-spacing:.2px;
+      transition:transform var(--t), background var(--t), border-color var(--t);
+      cursor:pointer;
+      user-select:none;
+      white-space:nowrap;
+    }
+    #inventory-view .inv-action-btn:hover{transform:translateY(-1px);border-color:rgba(255,255,255,.18);background:rgba(255,255,255,.09)}
+    #inventory-view .inv-action-btn:focus-visible{outline:none;box-shadow:var(--ring)}
+
+    #inventory-view .inv-action-edit{border-color:rgba(59,130,246,.28);background:rgba(59,130,246,.10)}
+    #inventory-view .inv-action-edit:hover{border-color:rgba(59,130,246,.40);background:rgba(59,130,246,.16)}
+
+    #inventory-view .inv-action-delete{border-color:rgba(225,29,72,.28);background:rgba(225,29,72,.10)}
+    #inventory-view .inv-action-delete:hover{border-color:rgba(225,29,72,.42);background:rgba(225,29,72,.18)}
+
+    /* Flashing low-stock badge */
+    #inventory-view .inv-low-stock{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:.82rem;
+      font-weight:1000;
+      letter-spacing:.2px;
+      border:1px solid rgba(225,29,72,.34);
+      background:rgba(225,29,72,.16);
+      color:rgba(255,255,255,.98);
+      white-space:nowrap;
+      animation: invLowStockFlash 900ms ease-in-out infinite;
+    }
+    @keyframes invLowStockFlash{
+      0%,100%{opacity:1;transform:translateY(0)}
+      50%{opacity:.55;transform:translateY(-1px)}
+    }
+
+    /* Inventory modals */
+    #inventory-modal-overlay{
+      position:fixed;
+      inset:0;
+      width:100vw;height:100vh;
+      background:rgba(0,0,0,.72);
+      backdrop-filter:blur(10px);
+      -webkit-backdrop-filter:blur(10px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:3100;
+      padding:16px;
+    }
+    #inventory-modal-overlay.active{display:flex}
+
+    #inventory-modal{
+      width:min(980px,100%);
+      max-height:min(86vh,860px);
+      overflow:auto;
+      border-radius:var(--radius-lg);
+      background:rgba(10,10,14,.96);
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow:var(--shadow-glow);
+      transform:translateY(10px) scale(.99);
+      opacity:0;
+      transition:transform 220ms ease, opacity 220ms ease;
+      position:relative;
+    }
+    #inventory-modal-overlay.active #inventory-modal{transform:translateY(0) scale(1);opacity:1}
+
+    #inventory-modal .inv-modal-header{
+      position:sticky;
+      top:0;
+      z-index:1100;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:16px;
+      background:rgba(10,10,14,.98);
+      border-bottom:1px solid rgba(255,255,255,.08);
+      isolation:isolate;
+    }
+    #inventory-modal .inv-modal-title{
+      display:flex;align-items:center;gap:10px;font-weight:1000;letter-spacing:.2px;font-size:1.05rem;
+    }
+    #inventory-modal .inv-modal-title i{
+      width:36px;height:36px;border-radius:12px;
+      display:grid;place-items:center;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.10);
+    }
+
+    #inventory-modal .inv-modal-close{
+      width:42px;height:42px;border-radius:14px;
+      display:grid;place-items:center;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.06);
+      color:rgba(255,255,255,.95);
+      transition:transform var(--t), background var(--t), border-color var(--t);
+      cursor:pointer;
+    }
+    #inventory-modal .inv-modal-close:hover{transform:translateY(-1px);background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.18)}
+    #inventory-modal .inv-modal-close:focus-visible{outline:none;box-shadow:var(--ring)}
+
+    #inventory-modal .inv-modal-body{padding:16px}
+
+    #inventory-form-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+    }
+    #inventory-form-grid .inv-field{display:grid;gap:7px}
+    #inventory-form-grid .inv-field label{
+      color:rgba(255,255,255,.75);
+      font-weight:1000;
+      letter-spacing:.2px;
+      font-size:.86rem;
+    }
+    #inventory-form-grid .inv-field input,
+    #inventory-form-grid .inv-field textarea,
+    #inventory-form-grid .inv-field select{
+      width:100%;
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:12px;
+      padding:10px 12px;
+      background:rgba(255,255,255,.05);
+      color:rgba(255,255,255,.95);
+      outline:none;
+      font-weight:800;
+    }
+    #inventory-form-grid .inv-field textarea{min-height:98px;resize:vertical}
+    #inventory-form-grid .inv-field.full{grid-column:1/-1}
+
+    #inventory-form-actions{
+      display:flex;
+      gap:12px;
+      justify-content:flex-end;
+      align-items:center;
+      margin-top:14px;
+      flex-wrap:wrap;
+    }
+
+    #inventory-form-actions .inv-save-btn{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(59,130,246,.12);
+      color:rgba(255,255,255,.95);
+      font-weight:1000;
+      letter-spacing:.2px;
+      cursor:pointer;
+      user-select:none;
+      transition:transform var(--t), background var(--t), border-color var(--t);
+      white-space:nowrap;
+    }
+    #inventory-form-actions .inv-save-btn:hover{transform:translateY(-1px);border-color:rgba(59,130,246,.40);background:rgba(59,130,246,.18)}
+
+    #inventory-form-actions .inv-cancel-btn{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.05);
+      color:rgba(255,255,255,.95);
+      font-weight:1000;
+      letter-spacing:.2px;
+      cursor:pointer;
+      user-select:none;
+      transition:transform var(--t), background var(--t), border-color var(--t);
+      white-space:nowrap;
+    }
+    #inventory-form-actions .inv-cancel-btn:hover{transform:translateY(-1px);border-color:rgba(255,255,255,.18);background:rgba(255,255,255,.09)}
+
+    @media (max-width: 820px){
+      #inventory-form-grid{grid-template-columns:1fr}
+    }
   </style>
 </head>
 <body>
@@ -646,10 +914,11 @@
                 <div class="panel-title"><i class="fa-solid fa-warehouse"></i> Dynamic Inventory</div>
               </div>
               <div class="panel-body">
-                <div class="empty">Inventory tab is scaffolded for future implementation.</div>
+                <div id="inventory-view" class="inv-wrap"></div>
               </div>
             </div>
           </section>
+
 
           <section id="view-metrics" class="view" data-view="metrics" aria-label="Metrics tracker">
             <div class="panel">
@@ -1364,6 +1633,443 @@
 
 
     // =============================
+    // INVENTORY CRUD (Dynamic Inventory) - ONLY affects inventory view
+    // =============================
+    const LS_INVENTORY = 'nutrition_haveli_inventory_products';
+
+    let inventoryProducts = safeParse(LS_INVENTORY, []);
+
+    const DEFAULT_FEATURES = () => ({
+      authenticity: '',
+      keyBenefits: '',
+      ingredients: '',
+      expiryDetails: ''
+    });
+
+    function ensureInventoryProductShape(p){
+      if(!p || typeof p !== 'object') return null;
+
+      // required base fields
+      const requiredFields = ['id','name','price','stockQuantity','category','details','imageLink','videoLink'];
+      for(const f of requiredFields){
+        if(p[f] === undefined) p[f] = (f === 'price' ? 0 : f === 'stockQuantity' ? 0 : '');
+      }
+
+      // features framework native on each product
+      if(!p.features || typeof p.features !== 'object') p.features = DEFAULT_FEATURES();
+      if(p.features.authenticity === undefined) p.features.authenticity = '';
+      if(p.features.keyBenefits === undefined) p.features.keyBenefits = '';
+      if(p.features.ingredients === undefined) p.features.ingredients = '';
+      if(p.features.expiryDetails === undefined) p.features.expiryDetails = '';
+
+      p.id = parseId(p.id);
+      p.price = Number(p.price || 0);
+      p.stockQuantity = Number(p.stockQuantity || 0);
+      return p;
+    }
+
+    function seedInventoryProductsIfEmpty(){
+      if(!Array.isArray(inventoryProducts)) inventoryProducts = [];
+
+      if(inventoryProducts.length) {
+        inventoryProducts = inventoryProducts.map(ensureInventoryProductShape).filter(Boolean);
+        localStorage.setItem(LS_INVENTORY, JSON.stringify(inventoryProducts));
+        return;
+      }
+
+      const defaults = [
+        {
+          id: 1,
+          name: 'Whey Protein Concentrate',
+          price: 2499,
+          stockQuantity: 12,
+          category: 'Whey Protein',
+          details: 'Rich protein blend for strength & recovery.',
+          imageLink: 'images/logo-placeholder.svg',
+          videoLink: '',
+          features: {
+            authenticity: 'Brand-verified batch authenticity.',
+            keyBenefits: 'Supports muscle growth and quicker recovery.',
+            ingredients: 'Whey protein concentrate (milk), natural flavors.',
+            expiryDetails: 'Best before 24 months from manufacturing.'
+          }
+        },
+        {
+          id: 2,
+          name: 'Creatine Monohydrate',
+          price: 1299,
+          stockQuantity: 3,
+          category: 'Creatine',
+          details: 'Improves strength, power, and high-intensity performance.',
+          imageLink: 'images/logo-placeholder.svg',
+          videoLink: '',
+          features: {
+            authenticity: 'Lab-tested purity & composition.',
+            keyBenefits: 'Boosts ATP and workout output.',
+            ingredients: 'Creatine monohydrate.',
+            expiryDetails: 'Best before 30 months from manufacturing.'
+          }
+        },
+        {
+          id: 3,
+          name: 'Pre-Workout Energy',
+          price: 999,
+          stockQuantity: 7,
+          category: 'Pre-Workout',
+          details: 'Punchy energy blend for focused sessions.',
+          imageLink: 'images/logo-placeholder.svg',
+          videoLink: '',
+          features: {
+            authenticity: 'Sealed & authenticated product packaging.',
+            keyBenefits: 'Enhanced focus and pump during training.',
+            ingredients: 'Caffeine blend, citrulline support ingredients.',
+            expiryDetails: 'Best before 18 months from manufacturing.'
+          }
+        },
+        {
+          id: 4,
+          name: 'BCAA Amino Acids',
+          price: 799,
+          stockQuantity: 2,
+          category: 'Amino Acids',
+          details: 'Helps reduce fatigue and supports recovery.',
+          imageLink: 'images/logo-placeholder.svg',
+          videoLink: '',
+          features: {
+            authenticity: 'Batch authenticity & quality controlled.',
+            keyBenefits: 'Supports recovery and lean mass protection.',
+            ingredients: 'L-Leucine, L-Isoleucine, L-Valine.',
+            expiryDetails: 'Best before 20 months from manufacturing.'
+          }
+        },
+        {
+          id: 5,
+          name: 'Omega-3 Fish Oil',
+          price: 1499,
+          stockQuantity: 5,
+          category: 'Essential Fats',
+          details: 'Supports heart, joints, and overall wellness.',
+          imageLink: 'images/logo-placeholder.svg',
+          videoLink: '',
+          features: {
+            authenticity: 'Third-party tested purity.',
+            keyBenefits: 'Helps joint comfort and healthy metabolism.',
+            ingredients: 'Omega-3 fatty acids (EPA/DHA).',
+            expiryDetails: 'Best before 28 months from manufacturing.'
+          }
+        },
+        {
+          id: 6,
+          name: 'Multivitamin for Athletes',
+          price: 899,
+          stockQuantity: 3,
+          category: 'Vitamins',
+          details: 'Daily micronutrients to support training life.',
+          imageLink: 'images/logo-placeholder.svg',
+          videoLink: '',
+          features: {
+            authenticity: 'Authenticated manufacturing and seals.',
+            keyBenefits: 'Helps cover nutritional gaps for athletes.',
+            ingredients: 'Vitamin/mineral complex.',
+            expiryDetails: 'Best before 24 months from manufacturing.'
+          }
+        }
+      ];
+
+      inventoryProducts = defaults.map(ensureInventoryProductShape).filter(Boolean);
+      localStorage.setItem(LS_INVENTORY, JSON.stringify(inventoryProducts));
+    }
+
+    function saveInventoryProducts(){
+      localStorage.setItem(LS_INVENTORY, JSON.stringify(inventoryProducts));
+    }
+
+    function openInventoryModal(mode, product){
+      // mode: 'add' | 'edit'
+      const overlay = document.getElementById('inventory-modal-overlay');
+      const modal = document.getElementById('inventory-modal');
+      if(!overlay || !modal) return;
+
+      // Clear prior contents to avoid duplicate event wiring side-effects
+      overlay.classList.remove('active');
+      modal.innerHTML = '';
+
+      const isEdit = mode === 'edit';
+
+      const title = isEdit ? 'Edit Product' : 'Add New Product';
+      const icon = isEdit ? 'fa-solid fa-pen-to-square' : 'fa-solid fa-plus';
+
+      // Initialize form fields HTML
+      const nameVal = isEdit ? (product?.name || '') : '';
+      const categoryVal = isEdit ? (product?.category || '') : '';
+      const priceVal = isEdit ? (product?.price ?? '') : '';
+      const stockVal = isEdit ? (product?.stockQuantity ?? '') : '';
+      const imageVal = isEdit ? (product?.imageLink || '') : '';
+      const videoVal = isEdit ? (product?.videoLink || '') : '';
+      const detailsVal = isEdit ? (product?.details || '') : '';
+
+      modal.innerHTML = `
+        <div class="inv-modal-header">
+          <div class="inv-modal-title"><i class="${icon}"></i> ${escapeHtml(title)}</div>
+          <button class="inv-modal-close" type="button" aria-label="Close" data-inv-modal-close><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="inv-modal-body">
+          <div id="inventory-form-grid">
+            <div class="inv-field">
+              <label for="inv-name">Name</label>
+              <input id="inv-name" type="text" value="${escapeHtml(nameVal)}" placeholder="Product name" />
+            </div>
+            <div class="inv-field">
+              <label for="inv-category">Category</label>
+              <input id="inv-category" type="text" value="${escapeHtml(categoryVal)}" placeholder="Category" />
+            </div>
+            <div class="inv-field">
+              <label for="inv-price">Price</label>
+              <input id="inv-price" type="number" min="0" step="1" value="${escapeHtml(priceVal)}" placeholder="₹" />
+            </div>
+            <div class="inv-field">
+              <label for="inv-stock">Stock</label>
+              <input id="inv-stock" type="number" min="0" step="1" value="${escapeHtml(stockVal)}" placeholder="Quantity" />
+            </div>
+            <div class="inv-field full">
+              <label for="inv-image">Image URL</label>
+              <input id="inv-image" type="url" value="${escapeHtml(imageVal)}" placeholder="Image link" />
+            </div>
+          <div class="inv-field full">
+              <label for="inv-video">Video URL</label>
+              <input id="inv-video" type="url" value="${escapeHtml(videoVal)}" placeholder="Video link" />
+            </div>
+            <div class="inv-field full" style="display:none;">
+              <label for="inv-details-hidden">Features (hidden)</label>
+              <textarea id="inv-details-hidden"></textarea>
+            </div>
+
+            <div class="inv-field full">
+              <label for="inv-details">Short Details</label>
+              <textarea id="inv-details" placeholder="Short details...">${escapeHtml(detailsVal)}</textarea>
+            </div>
+          </div>
+
+          <div id="inventory-form-actions">
+            <button class="inv-cancel-btn" type="button" data-inv-modal-close>Cancel</button>
+            <button class="inv-save-btn" type="button" id="inv-save-btn">${escapeHtml(isEdit ? 'Save Changes' : 'Add Product')}</button>
+          </div>
+        </div>
+      `;
+
+      overlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+      const closeBtn = modal.querySelector('[data-inv-modal-close]');
+      const saveBtn = document.getElementById('inv-save-btn');
+
+      function close(){
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+
+      if(closeBtn){
+        closeBtn.addEventListener('click', close, { once: true });
+      }
+
+      overlay.addEventListener('click', function(e){
+        if(e.target === overlay) close();
+      }, { once: true });
+
+      document.addEventListener('keydown', function esc(ev){
+        if(ev.key === 'Escape'){
+          document.removeEventListener('keydown', esc);
+          close();
+        }
+      });
+
+          saveBtn.addEventListener('click', () => {
+        const name = (document.getElementById('inv-name')?.value || '').trim();
+        const category = (document.getElementById('inv-category')?.value || '').trim();
+        const price = Number(document.getElementById('inv-price')?.value || 0);
+        const stockQuantity = Number(document.getElementById('inv-stock')?.value || 0);
+        const imageLink = (document.getElementById('inv-image')?.value || '').trim();
+        const videoLink = (document.getElementById('inv-video')?.value || '').trim();
+        const details = (document.getElementById('inv-details')?.value || '').trim();
+
+        // Ensure feature fields exist so the product object natively holds them.
+        // They will be edited later by the client-side arrays syncing framework.
+        // (For now, we preserve existing values on edit.)
+        // (No-op placeholder: defaults are created in ensureInventoryProductShape.)
+
+        if(!name){ alert('Name is required.'); return; }
+
+        if(!category){ alert('Category is required.'); return; }
+        if(!Number.isFinite(price) || price < 0){ alert('Invalid price.'); return; }
+        if(!Number.isFinite(stockQuantity) || stockQuantity < 0){ alert('Invalid stock.'); return; }
+
+        if(isEdit){
+          const targetId = parseId(product?.id);
+          const p = inventoryProducts.find(x => parseId(x.id) === targetId);
+          if(!p) { alert('Product not found.'); return; }
+          p.name = name;
+          p.category = category;
+          p.price = price;
+          p.stockQuantity = stockQuantity;
+          p.imageLink = imageLink;
+          p.videoLink = videoLink;
+          p.details = details;
+          // keep/preserve features (framework native fields)
+          p.features = p.features && typeof p.features === 'object' ? p.features : DEFAULT_FEATURES();
+        } else {
+          const nextId = inventoryProducts.length ? (Math.max(...inventoryProducts.map(x => Number(x.id)||0)) + 1) : 1;
+          const newProd = {
+            id: nextId,
+            name,
+            price,
+            stockQuantity,
+            category,
+            details,
+            imageLink,
+            videoLink,
+            features: DEFAULT_FEATURES()
+          };
+          inventoryProducts.push(ensureInventoryProductShape(newProd));
+        }
+
+        inventoryProducts = inventoryProducts.map(ensureInventoryProductShape).filter(Boolean);
+        saveInventoryProducts();
+        close();
+        renderInventoryView();
+      });
+    }
+
+    function ensureInventoryModalNodes(){
+      let overlay = document.getElementById('inventory-modal-overlay');
+      if(!overlay){
+        overlay = document.createElement('div');
+        overlay.id = 'inventory-modal-overlay';
+        overlay.className = 'modal-overlay';
+        overlay.setAttribute('role','dialog');
+        overlay.setAttribute('aria-modal','true');
+        overlay.setAttribute('aria-label','Inventory modal');
+
+        const modal = document.createElement('div');
+        modal.id = 'inventory-modal';
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+      }
+
+      if(!document.getElementById('inventory-modal')){
+        const modal = document.createElement('div');
+        modal.id = 'inventory-modal';
+        overlay.appendChild(modal);
+      }
+    }
+
+    function renderInventoryView(){
+      const wrap = document.getElementById('inventory-view');
+      if(!wrap) return;
+
+      seedInventoryProductsIfEmpty();
+
+      const list = Array.isArray(inventoryProducts) ? inventoryProducts : [];
+
+      // Action bar + table layout (clean)
+      let html = '';
+      html += `
+        <div class="inv-topbar">
+          <div style="font-weight:1000;letter-spacing:.2px;">Inventory Products</div>
+          <button type="button" class="inv-add-btn" id="inv-add-new-btn" aria-label="Add New Product">
+            <span aria-hidden="true">[+]</span> <span>Add New Product</span>
+          </button>
+        </div>
+
+        <table class="inv-table" role="table" aria-label="Inventory products table">
+          <thead class="inv-thead">
+            <tr>
+              <th>Image</th>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Stock Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      if(!list.length){
+        html += `<tr class="inv-row"><td colspan="6"><div class="empty" style="margin:0">No inventory products found.</div></td></tr>`;
+      } else {
+        for(const p of list){
+          const low = Number(p.stockQuantity || 0) <= 3;
+          const imgSrc = (p.imageLink || '').trim() || 'images/logo-placeholder.svg';
+          const lowBadge = low ? `<span class="inv-low-stock" title="Low stock">⚠️ Low Stock</span>` : '';
+          const videoLink = (p.videoLink || '').trim();
+          const detailsText = (p.details || '').trim();
+          html += `
+            <tr class="inv-row" data-inv-row-id="${escapeHtml(p.id)}" data-video-link="${escapeHtml(videoLink)}" data-details="${escapeHtml(detailsText)}">
+
+              <td>
+                <div class="inv-img"><img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(p.name)}" /></div>
+              </td>
+              <td>
+                <div style="display:grid;gap:6px;">
+                  <div style="font-weight:1000;letter-spacing:.2px;">${escapeHtml(p.name)}</div>
+                  ${lowBadge}
+                </div>
+              </td>
+              <td class="inv-cat">${escapeHtml(p.category)}</td>
+              <td class="inv-price">${formatINR(p.price)}</td>
+              <td class="inv-stock">${escapeHtml(p.stockQuantity)} Qty</td>
+              <td>
+                <div class="inv-actions">
+                  <button type="button" class="inv-action-btn inv-action-edit" data-inv-action="edit" data-inv-id="${escapeHtml(p.id)}">Edit</button>
+                  <button type="button" class="inv-action-btn inv-action-delete" data-inv-action="delete" data-inv-id="${escapeHtml(p.id)}">Delete</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }
+      }
+
+      html += `
+          </tbody>
+        </table>
+      `;
+
+      wrap.innerHTML = html;
+
+      const addBtn = document.getElementById('inv-add-new-btn');
+      if(addBtn){
+        addBtn.addEventListener('click', () => openInventoryModal('add', null));
+      }
+
+      // Attach a click-to-edit helper (works even if new rows are later re-rendered)
+      wrap.querySelectorAll('[data-inv-row-id]').forEach(tr => {
+        tr.addEventListener('dblclick', () => {
+          const id = parseId(tr.getAttribute('data-inv-row-id'));
+          const p = inventoryProducts.find(x => parseId(x.id) === id);
+          if(p) openInventoryModal('edit', p);
+        });
+      });
+
+
+      wrap.querySelectorAll('[data-inv-action]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const action = btn.getAttribute('data-inv-action');
+          const id = parseId(btn.getAttribute('data-inv-id'));
+          const p = inventoryProducts.find(x => parseId(x.id) === id);
+          if(action === 'edit'){
+            openInventoryModal('edit', p);
+          } else if(action === 'delete'){
+            if(!p){ alert('Product not found.'); return; }
+            const ok = confirm(`Delete "${p.name}"?`);
+            if(!ok) return;
+            inventoryProducts = inventoryProducts.filter(x => parseId(x.id) !== id);
+            saveInventoryProducts();
+            renderInventoryView();
+          }
+        });
+      });
+    }
+
+    // =============================
     // INIT
     // =============================
     document.addEventListener('DOMContentLoaded', () => {
@@ -1371,6 +2077,24 @@
       initTrashModal();
       updateTrashCounter();
       renderOrders();
+
+      // Inventory modal nodes and tab hook
+      ensureInventoryModalNodes();
+
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        if(btn.dataset.view === 'inventory'){
+          btn.addEventListener('click', () => {
+            // DO NOT alter existing navigation logic; only render inventory view for this tab.
+            renderInventoryView();
+          });
+        }
+      });
+
+      // If user reloads with inventory already active, render immediately
+      const invView = document.querySelector('.view[data-view="inventory"]');
+      if(invView && invView.classList.contains('active')){
+        renderInventoryView();
+      }
 
       window.addEventListener('storage', (e) => {
         if(!e || !e.key) return;
@@ -1384,6 +2108,12 @@
           paidOrders = normalizeOrderArray(paidOrders);
           trashOrders = normalizeOrderArray(trashOrders);
           renderOrders();
+        }
+        if(e.key === LS_INVENTORY){
+          inventoryProducts = safeParse(LS_INVENTORY, []);
+          inventoryProducts = inventoryProducts.map(ensureInventoryProductShape).filter(Boolean);
+          const invActive = document.querySelector('.view[data-view="inventory"]')?.classList.contains('active');
+          if(invActive) renderInventoryView();
         }
       });
     });
