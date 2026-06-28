@@ -1100,14 +1100,21 @@
         ? 'Cleared'
         : `Pending (₹${Number(target.pendingAmount || 0)})`;
 
-      if(!trashOrders.some(o => o.id === id)) trashOrders.push(target);
-
-      orders = orders.filter(o => o.id !== id);
+      // =============================
+      // CASCADE DELETE SYSTEM (ORDER LOG MASTER DEPENDENCY)
+      // =============================
+      // When an order is deleted from the active logs, remove the exact-ID companion record
+      // from BOTH paid + pending pipelines before pushing to trash.
       paidOrders = paidOrders.filter(o => o.id !== id);
       pendingOrders = pendingOrders.filter(o => o.id !== id);
 
+      if(!trashOrders.some(o => o.id === id)) trashOrders.push(target);
+
+      orders = orders.filter(o => o.id !== id);
+      
       commitStateToDisk('🔴 Order Shifted to Trash.');
     };
+
 
     // =============================
     // TAB ROUTING
@@ -1157,7 +1164,17 @@
           const { phone, address } = extractCustomerMeta(o);
 
           const total = getOrderTotal(o);
-          const trashMetadata = o.trashMetadata || (o.paymentStatus === 'Done' ? 'Cleared' : `Pending (₹${Number(o.pendingAmount || 0)})`);
+
+          const pendingAmt = Number(o.pendingAmount || 0);
+          const isCleared = o.paymentStatus === 'Done' || o.trashMetadata === 'Cleared';
+
+          // Persistent pending metrics in trash cards:
+          // - If pendingAmount exists (>0), always show exact numeric balance.
+          // - If cleared/done context, show Cleared.
+          let trashMetadata = 'Cleared';
+          if(!isCleared){
+            trashMetadata = `🟡 Pending: ₹${formatINR(pendingAmt).replace('₹','')}`;
+          }
 
           const card = document.createElement('div');
           card.className = 'order-card';
@@ -1276,17 +1293,46 @@
       let target = trashOrders.find(o => o.id === id);
       if(!target) return;
 
-      // Put back to orders/pending based on paymentStatus
-      const isCleared = target.paymentStatus === 'Done';
-      if(isCleared){
+      // =============================
+      // INTELLIGENT RESTORE PIPELINE (DYNAMIC TARGET ROUTING)
+      // =============================
+      // Every restored item MUST immediately return back into the main 'orders' array.
+      if(!orders.some(o => o.id === id)) orders.push(target);
+
+      // Concurrently inspect the order's metadata state / balance indicators.
+      // If previously marked as "Done/Cleared", append it back into 'paidOrders'.
+      // If it carries a registered partial balance, append it back into 'pendingOrders'.
+      const doneIndicator = (
+        target.paymentStatus === 'Done' ||
+        target.trashMetadata === 'Cleared' ||
+        (typeof target.trashMetadata === 'string' && /cleared/i.test(target.trashMetadata))
+      );
+
+      const pendingIndicatorAmt = Number(target.pendingAmount || 0);
+      const hasPending = Number.isFinite(pendingIndicatorAmt) && pendingIndicatorAmt > 0;
+
+      // If marked cleared/done, restore into paid pipeline as well.
+      if(doneIndicator){
         if(!paidOrders.some(o => o.id === id)) paidOrders.push(target);
-      } else {
+      }
+
+      // If it has partial balance, restore into pending pipeline as well.
+      if(hasPending){
         if(!pendingOrders.some(o => o.id === id)) pendingOrders.push(target);
       }
 
+      // Finally: splice/remove from the trash array.
       trashOrders = trashOrders.filter(o => o.id !== id);
+
+      // Remove any stale duplicates to keep pipelines consistent.
+      if(doneIndicator){
+        pendingOrders = pendingOrders.filter(o => o.id !== id);
+      }
+
+      // Call synchronization methods to re-render dynamic views.
       commitStateToDisk('🟢 Restored from Trash.');
     };
+
 
     // =============================
     // PERMANENT PURGE (Trash)
