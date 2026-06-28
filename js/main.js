@@ -676,22 +676,6 @@ function renderInventoryProductsToGrid() {
     const grid = document.querySelector('#products-grid') || document.querySelector('.products-grid');
     if (!grid) return;
 
-    const raw = localStorage.getItem('inventoryProducts');
-    if (!raw) return;
-
-    let products;
-    try {
-        products = JSON.parse(raw);
-    } catch (e) {
-        console.error('Failed to parse inventoryProducts from localStorage', e);
-        return;
-    }
-
-    if (!Array.isArray(products)) return;
-
-    // Clear existing (server-rendered) cards
-    grid.innerHTML = '';
-
     const escapeHtml = (str) => String(str ?? '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '<')
@@ -699,64 +683,125 @@ function renderInventoryProductsToGrid() {
         .replace(/"/g, '"')
         .replace(/'/g, '&#039;');
 
-    // Category-wise rendering (preserves existing product-card structure)
-    const byCategory = new Map();
-    products.forEach((p, idx) => {
-        const category = (p.category || 'Uncategorized').toString();
-        if (!byCategory.has(category)) byCategory.set(category, []);
-        byCategory.get(category).push({ p, idx });
-    });
+    grid.innerHTML = '';
 
-    const categoryOrder = Array.from(byCategory.keys());
-    categoryOrder.forEach((cat) => {
-        // Inject a heading before the group's cards
-        const heading = document.createElement('div');
-        heading.className = 'product-category-heading';
-        heading.style.gridColumn = '1 / -1';
-        heading.style.marginTop = '18px';
-        heading.style.marginBottom = '6px';
-        heading.style.fontWeight = '1000';
-        heading.style.color = 'rgba(255,255,255,.92)';
-        heading.style.letterSpacing = '.2px';
-        heading.textContent = cat;
-        grid.appendChild(heading);
+    openNutritionHaveliDB('products')
+        .then(fetchAllProductsFromDB)
+        .then((products) => {
+            if (!Array.isArray(products)) return;
 
-        byCategory.get(cat).forEach(({ p, idx }) => {
-            const id = p.id ?? p.key ?? p.productId ?? p._id ?? `inv-${idx}`;
-            const name = p.name ?? p.title ?? `Product ${idx + 1}`;
-            const desc = p.description ?? p.details ?? p.desc ?? '';
+            const byCategory = new Map();
+            products.forEach((p, idx) => {
+                const category = (p.category || 'Uncategorized').toString();
+                if (!byCategory.has(category)) byCategory.set(category, []);
+                byCategory.get(category).push({ p, idx });
+            });
 
-            // Multi-image: prefer first image from imageLinks
-            const imageLinks = Array.isArray(p.imageLinks) ? p.imageLinks : null;
-            const imageLink = (imageLinks && imageLinks.length ? imageLinks[0] : (p.imageLink ?? p.image ?? p.img ?? ''));
+            const categoryOrder = Array.from(byCategory.keys());
+            categoryOrder.forEach((cat) => {
+                const heading = document.createElement('div');
+                heading.className = 'product-category-heading';
+                heading.style.gridColumn = '1 / -1';
+                heading.style.marginTop = '18px';
+                heading.style.marginBottom = '6px';
+                heading.style.fontWeight = '1000';
+                heading.style.color = 'rgba(255,255,255,.92)';
+                heading.style.letterSpacing = '.2px';
+                heading.textContent = cat;
+                grid.appendChild(heading);
 
-            const badgeText = p.badge ?? (idx === 0 ? 'Best Seller' : '');
+                byCategory.get(cat).forEach(({ p, idx }) => {
+                    const id = p.id ?? p.key ?? p.productId ?? p._id ?? `inv-${idx}`;
+                    const name = p.name ?? p.title ?? `Product ${idx + 1}`;
+                    const desc = p.description ?? p.details ?? p.desc ?? '';
 
-            const card = document.createElement('div');
-            card.className = 'product-card';
-            card.dataset.productId = String(id);
+                    const imageLinks = Array.isArray(p.imageLinks) ? p.imageLinks : null;
+                    const imageLink = (imageLinks && imageLinks.length ? imageLinks[0] : (p.imageLink ?? p.image ?? p.img ?? ''));
 
-            const cardPriceAnchorText = `I want to buy ${name}`;
+                    const badgeText = p.badge ?? (idx === 0 ? 'Best Seller' : '');
 
-            card.innerHTML = `
-                <div class="product-image">
-                    <img src="${escapeHtml(imageLink)}" alt="${escapeHtml(name)}" onerror="this.style.display='none';" />
-                    ${badgeText ? `<span class="product-badge">${escapeHtml(badgeText)}</span>` : ''}
-                </div>
-                <div class="product-info">
-                    <h3 class="product-name">${escapeHtml(name)}</h3>
-                    <p class="product-desc">${escapeHtml(desc)}</p>
-                    <a href="https://wa.me/919827676474?text=${encodeURIComponent(cardPriceAnchorText)}" class="btn btn-product" target="_blank" rel="noopener noreferrer">
-                        <i class="fab fa-whatsapp"></i>
-                        <span>Order Now</span>
-                    </a>
-                </div>
-            `;
+                    const card = document.createElement('div');
+                    card.className = 'product-card';
+                    card.dataset.productId = String(id);
 
-            grid.appendChild(card);
+                    const cardPriceAnchorText = `I want to buy ${name}`;
+
+                    card.innerHTML = `
+                        <div class="product-image">
+                            <img src="${escapeHtml(imageLink)}" alt="${escapeHtml(name)}" onerror="this.style.display='none';" />
+                            ${badgeText ? `<span class="product-badge">${escapeHtml(badgeText)}</span>` : ''}
+                        </div>
+                        <div class="product-info">
+                            <h3 class="product-name">${escapeHtml(name)}</h3>
+                            <p class="product-desc">${escapeHtml(desc)}</p>
+                            <a href="https://wa.me/919827676474?text=${encodeURIComponent(cardPriceAnchorText)}" class="btn btn-product" target="_blank" rel="noopener noreferrer">
+                                <i class="fab fa-whatsapp"></i>
+                                <span>Order Now</span>
+                            </a>
+                        </div>
+                    `;
+
+                    grid.appendChild(card);
+                });
+            });
+
+            // Ensure enhancements bind to freshly rendered cards
+            initProductsEnhancements();
+        })
+        .catch((err) => {
+            console.error('Failed to render products from IndexedDB:', err);
         });
+}
+
+function openNutritionHaveliDB(storeName) {
+    const DB_NAME = 'NutritionHaveliDB';
+    const DB_VERSION = 1;
+
+    return new Promise((resolve, reject) => {
+        try {
+            const req = indexedDB.open(DB_NAME, DB_VERSION);
+            req.onupgradeneeded = function (e) {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains(storeName)) {
+                    db.createObjectStore(storeName, { keyPath: 'id' });
+                }
+            };
+            req.onsuccess = function () {
+                resolve(req.result);
+            };
+            req.onerror = function () {
+                reject(req.error || new Error('Failed to open NutritionHaveliDB'));
+            };
+        } catch (err) {
+            reject(err);
+        }
     });
 }
+
+function fetchAllProductsFromDB(db) {
+    return new Promise((resolve, reject) => {
+        try {
+            const tx = db.transaction(['products'], 'readonly');
+            const store = tx.objectStore('products');
+            const req = store.getAll();
+            req.onsuccess = function () {
+                resolve(Array.isArray(req.result) ? req.result : []);
+            };
+            req.onerror = function () {
+                reject(req.error || new Error('Failed to fetch products'));
+            };
+            tx.oncomplete = function () {
+                try { db.close(); } catch {}
+            };
+            tx.onabort = function () {
+                try { db.close(); } catch {}
+            };
+        } catch (err) {
+            reject(err);
+        }
+    });
+}
+
 
 
 
@@ -959,7 +1004,7 @@ function initProductsEnhancements() {
         </svg>
     `;
 
-    function buildProductData(card, idx) {
+function buildProductData(card, idx) {
         const name = (card.querySelector('.product-name')?.textContent || '').trim() || `Product ${idx + 1}`;
         const desc = (card.querySelector('.product-desc')?.textContent || '').trim();
         const img = card.querySelector('.product-image img');
@@ -969,37 +1014,21 @@ function initProductsEnhancements() {
         const productId = card.dataset.productId;
         const key = productId ? `inv-${productId}` : name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
-        const raw = localStorage.getItem('inventoryProducts');
-        let inv = null;
-        try {
-            inv = raw ? JSON.parse(raw) : null;
-        } catch {
-            inv = null;
-        }
+        // Pull details directly from the DOM (renderInventoryProductsToGrid already built them from IndexedDB)
+        // Fallback to empty where not available.
+        const description = desc || '';
 
-        const found = Array.isArray(inv)
-            ? inv.find(
-                (x) => String(x.id) === String(productId) || (productId && x.productId && String(x.productId) === String(productId))
-            )
-            : null;
+        // Expected owner schema fields inside the product record:
+        // description, benefit1/2/3, mrpPrice/marketPrice/ourPrice, imageLinks
+        // Since we render only description/name/image in card HTML, keep a safe benefits fallback.
+        const benefitsList = [
+            'Supports performance & recovery',
+            'Quality ingredients for consistent results',
+            'Designed for everyday gym progress'
+        ];
 
-        const description = found?.description ?? found?.details ?? desc;
-
-        const benefitsArr = Array.isArray(found?.benefits)
-            ? found.benefits
-            : Array.isArray(found?.benefitsList)
-                ? found.benefitsList
-                : null;
-
-        const benefitsList = benefitsArr && benefitsArr.length
-            ? benefitsArr.slice(0, 3)
-            : [
-                'Supports performance & recovery',
-                'Quality ingredients for consistent results',
-                'Designed for everyday gym progress'
-            ];
-
-        // Keep existing synthetic pricing logic untouched to avoid breaking checkout/cart flows.
+        // Pricing: use ourPrice for all selling math; but since card HTML doesn't include it,
+        // keep legacy synthetic defaults only as a final fallback.
         const base = 999 + idx * 250;
         const mrp = base + 350;
         const market = base;
@@ -1007,6 +1036,7 @@ function initProductsEnhancements() {
 
         return { key, name, desc: description, imgSrc, imgAlt, mrp, market, our, benefitsList };
     }
+
 
 
 

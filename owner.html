@@ -1633,168 +1633,273 @@
 
 
     // =============================
-    // INVENTORY CRUD (Dynamic Inventory) - ONLY affects inventory view
+    // INVENTORY CRUD (Dynamic Inventory) - Unified IndexedDB
     // =============================
-    const LS_INVENTORY = 'nutrition_haveli_inventory_products';
-    const LS_INVENTORY_MASTER = 'inventoryProducts';
 
-    let inventoryProducts = safeParse(LS_INVENTORY_MASTER, []);
+    const DB_NAME = 'NutritionHaveliDB';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'products';
 
-    const DEFAULT_FEATURES = () => ({
-      authenticity: '',
-      keyBenefits: '',
-      ingredients: '',
-      expiryDetails: ''
-    });
-
-
-    function ensureInventoryProductShape(p){
-      if(!p || typeof p !== 'object') return null;
-
-      // required base fields
-      const requiredFields = ['id','name','price','stockQuantity','category','details','imageLink','videoLink'];
-      for(const f of requiredFields){
-        if(p[f] === undefined) p[f] = (f === 'price' ? 0 : f === 'stockQuantity' ? 0 : '');
-      }
-
-      // features framework native on each product
-      if(!p.features || typeof p.features !== 'object') p.features = DEFAULT_FEATURES();
-      if(p.features.authenticity === undefined) p.features.authenticity = '';
-      if(p.features.keyBenefits === undefined) p.features.keyBenefits = '';
-      if(p.features.ingredients === undefined) p.features.ingredients = '';
-      if(p.features.expiryDetails === undefined) p.features.expiryDetails = '';
-
-      p.id = parseId(p.id);
-      p.price = Number(p.price || 0);
-      p.stockQuantity = Number(p.stockQuantity || 0);
-      return p;
-    }
-
-    function seedInventoryProductsIfEmpty(){
-      if(!Array.isArray(inventoryProducts)) inventoryProducts = [];
-
-      if(inventoryProducts.length) {
-        inventoryProducts = inventoryProducts.map(ensureInventoryProductShape).filter(Boolean);
-        localStorage.setItem(LS_INVENTORY, JSON.stringify(inventoryProducts));
-        return;
-      }
-
-      const defaults = [
-        {
-          id: 1,
-          name: 'Whey Protein Concentrate',
-          price: 2499,
-          stockQuantity: 12,
-          category: 'Whey Protein',
-          details: 'Rich protein blend for strength & recovery.',
-          imageLink: 'images/logo-placeholder.svg',
-          videoLink: '',
-          features: {
-            authenticity: 'Brand-verified batch authenticity.',
-            keyBenefits: 'Supports muscle growth and quicker recovery.',
-            ingredients: 'Whey protein concentrate (milk), natural flavors.',
-            expiryDetails: 'Best before 24 months from manufacturing.'
-          }
-        },
-        {
-          id: 2,
-          name: 'Creatine Monohydrate',
-          price: 1299,
-          stockQuantity: 3,
-          category: 'Creatine',
-          details: 'Improves strength, power, and high-intensity performance.',
-          imageLink: 'images/logo-placeholder.svg',
-          videoLink: '',
-          features: {
-            authenticity: 'Lab-tested purity & composition.',
-            keyBenefits: 'Boosts ATP and workout output.',
-            ingredients: 'Creatine monohydrate.',
-            expiryDetails: 'Best before 30 months from manufacturing.'
-          }
-        },
-        {
-          id: 3,
-          name: 'Pre-Workout Energy',
-          price: 999,
-          stockQuantity: 7,
-          category: 'Pre-Workout',
-          details: 'Punchy energy blend for focused sessions.',
-          imageLink: 'images/logo-placeholder.svg',
-          videoLink: '',
-          features: {
-            authenticity: 'Sealed & authenticated product packaging.',
-            keyBenefits: 'Enhanced focus and pump during training.',
-            ingredients: 'Caffeine blend, citrulline support ingredients.',
-            expiryDetails: 'Best before 18 months from manufacturing.'
-          }
-        },
-        {
-          id: 4,
-          name: 'BCAA Amino Acids',
-          price: 799,
-          stockQuantity: 2,
-          category: 'Amino Acids',
-          details: 'Helps reduce fatigue and supports recovery.',
-          imageLink: 'images/logo-placeholder.svg',
-          videoLink: '',
-          features: {
-            authenticity: 'Batch authenticity & quality controlled.',
-            keyBenefits: 'Supports recovery and lean mass protection.',
-            ingredients: 'L-Leucine, L-Isoleucine, L-Valine.',
-            expiryDetails: 'Best before 20 months from manufacturing.'
-          }
-        },
-        {
-          id: 5,
-          name: 'Omega-3 Fish Oil',
-          price: 1499,
-          stockQuantity: 5,
-          category: 'Essential Fats',
-          details: 'Supports heart, joints, and overall wellness.',
-          imageLink: 'images/logo-placeholder.svg',
-          videoLink: '',
-          features: {
-            authenticity: 'Third-party tested purity.',
-            keyBenefits: 'Helps joint comfort and healthy metabolism.',
-            ingredients: 'Omega-3 fatty acids (EPA/DHA).',
-            expiryDetails: 'Best before 28 months from manufacturing.'
-          }
-        },
-        {
-          id: 6,
-          name: 'Multivitamin for Athletes',
-          price: 899,
-          stockQuantity: 3,
-          category: 'Vitamins',
-          details: 'Daily micronutrients to support training life.',
-          imageLink: 'images/logo-placeholder.svg',
-          videoLink: '',
-          features: {
-            authenticity: 'Authenticated manufacturing and seals.',
-            keyBenefits: 'Helps cover nutritional gaps for athletes.',
-            ingredients: 'Vitamin/mineral complex.',
-            expiryDetails: 'Best before 24 months from manufacturing.'
-          }
+    function openNutritionHaveliDB(){
+      return new Promise((resolve, reject) => {
+        try{
+          const req = indexedDB.open(DB_NAME, DB_VERSION);
+          req.onupgradeneeded = function(e){
+            const db = e.target.result;
+            if(!db.objectStoreNames.contains(STORE_NAME)){
+              db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+            }
+          };
+          req.onsuccess = function(){
+            resolve(req.result);
+          };
+          req.onerror = function(){
+            reject(req.error || new Error('Failed to open NutritionHaveliDB'));
+          };
+        } catch(err){
+          reject(err);
         }
-      ];
-
-      inventoryProducts = defaults.map(ensureInventoryProductShape).filter(Boolean);
-      localStorage.setItem(LS_INVENTORY, JSON.stringify(inventoryProducts));
+      });
     }
 
-    function saveInventoryProducts(){
-      // Master-database commit (Requirement #1)
-      localStorage.setItem(LS_INVENTORY_MASTER, JSON.stringify(inventoryProducts));
+
+    function idbGetAllProducts(db){
+      return new Promise((resolve, reject) => {
+        try{
+          const tx = db.transaction([STORE_NAME], 'readonly');
+          const store = tx.objectStore(STORE_NAME);
+          const req = store.getAll();
+          req.onsuccess = () => resolve(Array.isArray(req.result) ? req.result : []);
+          req.onerror = () => reject(req.error || new Error('Failed to fetch products'));
+        } catch(err){
+          reject(err);
+        }
+      });
     }
 
+    function idbPutProduct(db, product){
+      return new Promise((resolve, reject) => {
+        try{
+          const tx = db.transaction([STORE_NAME], 'readwrite');
+          const store = tx.objectStore(STORE_NAME);
+          const req = store.put(product);
+          req.onsuccess = () => resolve(true);
+          req.onerror = () => reject(req.error || new Error('Failed to save product'));
+        } catch(err){ reject(err); }
+      });
+    }
+
+    function idbDeleteProduct(db, id){
+      return new Promise((resolve, reject) => {
+        try{
+          const tx = db.transaction([STORE_NAME], 'readwrite');
+          const store = tx.objectStore(STORE_NAME);
+          const req = store.delete(id);
+          req.onsuccess = () => resolve(true);
+          req.onerror = () => reject(req.error || new Error('Failed to delete product'));
+        } catch(err){ reject(err); }
+      });
+    }
+
+    function ensureProductShape(p){
+      const safe = (v) => (v === undefined || v === null ? '' : v);
+      const arrSafe = (v) => (Array.isArray(v) ? v : []);
+      const numSafe = (v) => {
+        const n = Number(v);
+        return Number.isFinite(n) ? n : 0;
+      };
+
+      const o = Object.assign({}, p);
+      o.id = parseId(o.id);
+      if(o.id === null || o.id === undefined || o.id === '') o.id = null;
+
+      o.name = safe(o.name).toString();
+      o.category = safe(o.category).toString();
+
+      o.mrpPrice = numSafe(o.mrpPrice);
+      o.marketPrice = numSafe(o.marketPrice);
+      o.ourPrice = numSafe(o.ourPrice);
+
+      o.description = safe(o.description).toString();
+      o.benefit1 = safe(o.benefit1).toString();
+      o.benefit2 = safe(o.benefit2).toString();
+      o.benefit3 = safe(o.benefit3).toString();
+
+      o.imageLinks = arrSafe(o.imageLinks);
+      o.videoLink = safe(o.videoLink).toString();
+
+      o.stockQuantity = numSafe(o.stockQuantity);
+      return o;
+    }
+
+    function getNextProductId(products){
+      const maxId = (Array.isArray(products) ? products : []).reduce((m, x) => {
+        const n = Number(x?.id);
+        return Number.isFinite(n) ? Math.max(m, n) : m;
+      }, 0);
+      return maxId + 1;
+    }
+
+    async function seedProductsIfEmpty(){
+      const db = await openNutritionHaveliDB();
+      try{
+        const all = await idbGetAllProducts(db);
+        if(all && all.length) return;
+
+        const defaults = [
+          {
+            id: 1,
+            name: 'Whey Protein Concentrate',
+            category: 'Whey Protein',
+            mrpPrice: 2499 + 350,
+            marketPrice: 2499,
+            ourPrice: 199 + Math.round(2499 * 0.74),
+            stockQuantity: 12,
+            description: 'Rich protein blend for strength & recovery.',
+            benefit1: 'Supports muscle growth',
+            benefit2: 'Quicker recovery',
+            benefit3: 'Helps strength & endurance',
+            imageLinks: ['images/logo-placeholder.svg'],
+            videoLink: ''
+          },
+          {
+            id: 2,
+            name: 'Creatine Monohydrate',
+            category: 'Creatine',
+            mrpPrice: 1299 + 350,
+            marketPrice: 1299,
+            ourPrice: 199 + Math.round(1299 * 0.74),
+            stockQuantity: 3,
+            description: 'Improves strength, power, and high-intensity performance.',
+            benefit1: 'Boosts ATP and workout output',
+            benefit2: 'Improves strength',
+            benefit3: 'Supports performance',
+            imageLinks: ['images/logo-placeholder.svg'],
+            videoLink: ''
+          },
+          {
+            id: 3,
+            name: 'Pre-Workout Energy',
+            category: 'Fat Burner',
+            mrpPrice: 999 + 350,
+            marketPrice: 999,
+            ourPrice: 199 + Math.round(999 * 0.74),
+            stockQuantity: 7,
+            description: 'Punchy energy blend for focused sessions.',
+            benefit1: 'Enhances focus',
+            benefit2: 'Improves pump',
+            benefit3: 'Supports high intensity training',
+            imageLinks: ['images/logo-placeholder.svg'],
+            videoLink: ''
+          },
+          {
+            id: 4,
+            name: 'BCAA Amino Acids',
+            category: 'Vitamins',
+            mrpPrice: 799 + 350,
+            marketPrice: 799,
+            ourPrice: 199 + Math.round(799 * 0.74),
+            stockQuantity: 2,
+            description: 'Helps reduce fatigue and supports recovery.',
+            benefit1: 'Supports lean mass protection',
+            benefit2: 'Reduces fatigue',
+            benefit3: 'Helps recovery',
+            imageLinks: ['images/logo-placeholder.svg'],
+            videoLink: ''
+          },
+          {
+            id: 5,
+            name: 'Omega-3 Fish Oil',
+            category: 'Vitamins',
+            mrpPrice: 1499 + 350,
+            marketPrice: 1499,
+            ourPrice: 199 + Math.round(1499 * 0.74),
+            stockQuantity: 5,
+            description: 'Supports heart, joints, and overall wellness.',
+            benefit1: 'Helps joint comfort',
+            benefit2: 'Supports healthy metabolism',
+            benefit3: 'Supports overall wellness',
+            imageLinks: ['images/logo-placeholder.svg'],
+            videoLink: ''
+          },
+          {
+            id: 6,
+            name: 'Multivitamin for Athletes',
+            category: 'Creatine',
+            mrpPrice: 899 + 350,
+            marketPrice: 899,
+            ourPrice: 199 + Math.round(899 * 0.74),
+            stockQuantity: 3,
+            description: 'Daily micronutrients to support training life.',
+            benefit1: 'Supports nutritional gaps',
+            benefit2: 'Helps energy metabolism',
+            benefit3: 'Supports training recovery',
+            imageLinks: ['images/logo-placeholder.svg'],
+            videoLink: ''
+          }
+        ];
+
+        for(const prod of defaults){
+          await idbPutProduct(db, ensureProductShape(prod));
+        }
+      } finally {
+        try{ db.close(); } catch{}
+      }
+    }
+
+    async function getProductsFromDB(){
+      const db = await openNutritionHaveliDB();
+      try{
+        const all = await idbGetAllProducts(db);
+        return (all || []).map(ensureProductShape).filter(Boolean);
+      } finally {
+        try{ db.close(); } catch{}
+      }
+    }
+
+    function renderFileLabelRow(containerEl, labelText, thumbsEl){
+      const label = document.createElement('div');
+      label.style.fontWeight = '1000';
+      label.style.letterSpacing = '.2px';
+      label.style.color = 'rgba(255,255,255,.85)';
+      label.textContent = labelText;
+      containerEl.appendChild(label);
+      if(thumbsEl) containerEl.appendChild(thumbsEl);
+    }
+
+    async function readFilesAsDataURLs(fileList, maxCount){
+      const files = Array.from(fileList || []);
+      const sliced = files.slice(0, maxCount);
+      const readAsDataURL = (file) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(new Error('Failed reading file'));
+        reader.readAsDataURL(file);
+      });
+
+      const results = [];
+      for(const f of sliced){
+        results.push(await readAsDataURL(f));
+      }
+      return results;
+    }
+
+    async function readSingleFileAsDataURL(file){
+      if(!file) return '';
+      const readAsDataURL = (f) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(new Error('Failed reading file'));
+        reader.readAsDataURL(f);
+      });
+      return await readAsDataURL(file);
+    }
 
     function openInventoryModal(mode, product){
-      // mode: 'add' | 'edit'
       const overlay = document.getElementById('inventory-modal-overlay');
       const modal = document.getElementById('inventory-modal');
       if(!overlay || !modal) return;
 
-      // Clear prior contents to avoid duplicate event wiring side-effects
       overlay.classList.remove('active');
       modal.innerHTML = '';
 
@@ -1803,70 +1908,115 @@
       const title = isEdit ? 'Edit Product' : 'Add New Product';
       const icon = isEdit ? 'fa-solid fa-pen-to-square' : 'fa-solid fa-plus';
 
-      // Initialize form fields HTML
-      const nameVal = isEdit ? (product?.name || '') : '';
-      const categoryVal = isEdit ? (product?.category || '') : '';
-      const priceVal = isEdit ? (product?.price ?? '') : '';
-      const stockVal = isEdit ? (product?.stockQuantity ?? '') : '';
-      const imageVal = isEdit ? (product?.imageLink || '') : '';
-      const videoVal = isEdit ? (product?.videoLink || '') : '';
-      const detailsVal = isEdit ? (product?.details || '') : '';
+      const prod = ensureProductShape(product || {});
+
+      const imageLinksVal = isEdit ? (Array.isArray(prod.imageLinks) ? prod.imageLinks : []) : [];
+      const videoLinkVal = isEdit ? (prod.videoLink || '') : '';
+
+      const mrpVal = isEdit ? (prod.mrpPrice ?? '') : '';
+      const marketVal = isEdit ? (prod.marketPrice ?? '') : '';
+      const ourVal = isEdit ? (prod.ourPrice ?? '') : '';
+
+      const detailsVal = isEdit ? (prod.description || '') : '';
+
+      const b1Val = isEdit ? (prod.benefit1 || '') : '';
+      const b2Val = isEdit ? (prod.benefit2 || '') : '';
+      const b3Val = isEdit ? (prod.benefit3 || '') : '';
+
+      const nameVal = isEdit ? (prod.name || '') : '';
+      const categoryVal = isEdit ? (prod.category || '') : '';
+      const stockVal = isEdit ? (prod.stockQuantity ?? '') : '';
 
       modal.innerHTML = `
         <div class="inv-modal-header">
           <div class="inv-modal-title"><i class="${icon}"></i> ${escapeHtml(title)}</div>
           <button class="inv-modal-close" type="button" aria-label="Close" data-inv-modal-close><i class="fa-solid fa-xmark"></i></button>
         </div>
+
         <div class="inv-modal-body">
           <div id="inventory-form-grid">
             <div class="inv-field">
               <label for="inv-name">Name</label>
               <input id="inv-name" type="text" value="${escapeHtml(nameVal)}" placeholder="Product name" />
             </div>
+
             <div class="inv-field">
               <label for="inv-category">Category</label>
               <input id="inv-category" type="text" value="${escapeHtml(categoryVal)}" placeholder="Category" />
             </div>
-            <div class="inv-field">
-              <label for="inv-price">Price</label>
-              <input id="inv-price" type="number" min="0" step="1" value="${escapeHtml(priceVal)}" placeholder="₹" />
-            </div>
+
             <div class="inv-field">
               <label for="inv-stock">Stock</label>
               <input id="inv-stock" type="number" min="0" step="1" value="${escapeHtml(stockVal)}" placeholder="Quantity" />
             </div>
-            <div class="inv-field full">
-              <label for="inv-image">Image</label>
-              <input id="inv-image" type="file" accept="image/*" />
-              <input id="inv-image-link" type="hidden" value="${escapeHtml(imageVal)}" />
+
+            <div class="inv-field">
+              <label for="inv-mrpPrice">MRP Price</label>
+              <input id="inv-mrpPrice" type="number" min="0" step="1" value="${escapeHtml(mrpVal)}" placeholder="MRP" />
             </div>
-            <div class="inv-field full">
-              <label for="inv-video">Video</label>
-              <input id="inv-video" type="file" accept="video/*" />
-              <input id="inv-video-link" type="hidden" value="${escapeHtml(videoVal)}" />
+
+            <div class="inv-field">
+              <label for="inv-marketPrice">Market Price</label>
+              <input id="inv-marketPrice" type="number" min="0" step="1" value="${escapeHtml(marketVal)}" placeholder="Market" />
             </div>
-            <div class="inv-field full" style="display:none;">
-              <label for="inv-details-hidden">Features (hidden)</label>
-              <textarea id="inv-details-hidden"></textarea>
+
+            <div class="inv-field">
+              <label for="inv-ourPrice">Our Price</label>
+              <input id="inv-ourPrice" type="number" min="0" step="1" value="${escapeHtml(ourVal)}" placeholder="Our Price" />
             </div>
 
             <div class="inv-field full">
-              <label for="inv-details">Short Details</label>
-              <textarea id="inv-details" placeholder="Short details...">${escapeHtml(detailsVal)}</textarea>
+              <label for="inv-images">Images (up to 6)</label>
+              <input id="inv-images" type="file" multiple accept="image/*" />
+              <input id="inv-images-hidden" type="hidden" value="${escapeHtml(imageLinksVal.join(','))}" />
+              <div id="inv-image-thumbs" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px"></div>
+            </div>
+
+            <div class="inv-field full">
+              <label for="inv-video">Video (single)</label>
+              <input id="inv-video" type="file" accept="video/*" />
+              <input id="inv-video-hidden" type="hidden" value="${escapeHtml(videoLinkVal)}" />
+              <div id="inv-video-label" style="margin-top:8px;color:rgba(255,255,255,.72);font-weight:900;letter-spacing:.2px;min-height:22px">${videoLinkVal ? 'Video ready' : 'No video selected'}</div>
+            </div>
+
+            <div class="inv-field full">
+              <label for="inv-description">Description</label>
+              <textarea id="inv-description" placeholder="Description...">${escapeHtml(detailsVal)}</textarea>
+            </div>
+
+            <div class="inv-field">
+              <label for="inv-benefit1">Benefit 1</label>
+              <input id="inv-benefit1" type="text" value="${escapeHtml(b1Val)}" placeholder="Benefit 1" />
+            </div>
+
+            <div class="inv-field">
+              <label for="inv-benefit2">Benefit 2</label>
+              <input id="inv-benefit2" type="text" value="${escapeHtml(b2Val)}" placeholder="Benefit 2" />
+            </div>
+
+            <div class="inv-field full">
+              <label for="inv-benefit3">Benefit 3</label>
+              <input id="inv-benefit3" type="text" value="${escapeHtml(b3Val)}" placeholder="Benefit 3" />
             </div>
           </div>
 
           <div id="inventory-form-actions">
             <button class="inv-cancel-btn" type="button" data-inv-modal-close>Cancel</button>
-          <button class="inv-save-btn" type="button" id="inv-save-btn">${escapeHtml(isEdit ? 'Save Changes' : 'Add Product')}</button>
+            <button class="inv-save-btn" type="button" id="inv-save-btn">${escapeHtml(isEdit ? 'Save Changes' : 'Add Product')}</button>
           </div>
         </div>
       `;
 
       overlay.classList.add('active');
       document.body.style.overflow = 'hidden';
+
       const closeBtn = modal.querySelector('[data-inv-modal-close]');
       const saveBtn = document.getElementById('inv-save-btn');
+      const imagesInput = document.getElementById('inv-images');
+      const imagesThumbs = document.getElementById('inv-image-thumbs');
+      const videoInput = document.getElementById('inv-video');
+      const videoLabel = document.getElementById('inv-video-label');
+      const videoHidden = document.getElementById('inv-video-hidden');
 
       function close(){
         overlay.classList.remove('active');
@@ -1888,94 +2038,155 @@
         }
       });
 
-          saveBtn.addEventListener('click', async () => {
+      // Initial thumbnails for edit
+      const renderInitialThumbs = () => {
+        if(!imagesThumbs) return;
+        imagesThumbs.innerHTML = '';
+        if(!imageLinksVal || !imageLinksVal.length) return;
+        imageLinksVal.slice(0,6).forEach((src, i) => {
+          const wrap = document.createElement('div');
+          wrap.style.width = '70px';
+          wrap.style.height = '70px';
+          wrap.style.borderRadius = '12px';
+          wrap.style.overflow = 'hidden';
+          wrap.style.border = '1px solid rgba(255,255,255,.10)';
+          wrap.style.background = 'rgba(255,255,255,.04)';
+          const img = document.createElement('img');
+          img.src = src;
+          img.alt = `Image ${i+1}`;
+          img.style.width = '100%';
+          img.style.height = '100%';
+          img.style.objectFit = 'cover';
+          img.onerror = () => { img.style.display = 'none'; };
+          wrap.appendChild(img);
+          imagesThumbs.appendChild(wrap);
+        });
+      };
+
+      renderInitialThumbs();
+
+      imagesInput?.addEventListener('change', async () => {
+        try{
+          if(!imagesThumbs) return;
+          imagesThumbs.innerHTML = '';
+          const selected = imagesInput?.files;
+          if(!selected || !selected.length){
+            return;
+          }
+          const dataUrls = await readFilesAsDataURLs(selected, 6);
+          dataUrls.forEach((src, i) => {
+            const wrap = document.createElement('div');
+            wrap.style.width = '70px';
+            wrap.style.height = '70px';
+            wrap.style.borderRadius = '12px';
+            wrap.style.overflow = 'hidden';
+            wrap.style.border = '1px solid rgba(255,255,255,.10)';
+            wrap.style.background = 'rgba(255,255,255,.04)';
+            const img = document.createElement('img');
+            img.src = src;
+            img.alt = `Selected Image ${i+1}`;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+            img.onerror = () => { img.style.display = 'none'; };
+            wrap.appendChild(img);
+            imagesThumbs.appendChild(wrap);
+          });
+        } catch{
+          alert('Failed to preview images.');
+        }
+      });
+
+      videoInput?.addEventListener('change', async () => {
+        try{
+          const file = videoInput?.files?.[0];
+          if(!file){
+            if(videoLabel) videoLabel.textContent = 'No video selected';
+            if(videoHidden) videoHidden.value = '';
+            return;
+          }
+          if(videoLabel) videoLabel.textContent = 'Video selected';
+          const dataUrl = await readSingleFileAsDataURL(file);
+          if(videoHidden) videoHidden.value = dataUrl;
+        } catch{
+          alert('Failed to load selected video.');
+        }
+      });
+
+      saveBtn.addEventListener('click', async () => {
         const name = (document.getElementById('inv-name')?.value || '').trim();
         const category = (document.getElementById('inv-category')?.value || '').trim();
-        const price = Number(document.getElementById('inv-price')?.value || 0);
         const stockQuantity = Number(document.getElementById('inv-stock')?.value || 0);
-        const details = (document.getElementById('inv-details')?.value || '').trim();
 
-        const readAsDataURL = (file) => new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(String(reader.result || ''));
-          reader.onerror = () => reject(new Error('Failed reading file'));
-          reader.readAsDataURL(file);
-        });
+        const mrpPrice = Number(document.getElementById('inv-mrpPrice')?.value || 0);
+        const marketPrice = Number(document.getElementById('inv-marketPrice')?.value || 0);
+        const ourPrice = Number(document.getElementById('inv-ourPrice')?.value || 0);
 
-        const imageInput = document.getElementById('inv-image');
-        const videoInput = document.getElementById('inv-video');
-        const imageHidden = document.getElementById('inv-image-link');
-        const videoHidden = document.getElementById('inv-video-link');
-
-        let imageLink = (imageHidden?.value || '').trim();
-        let videoLink = (videoHidden?.value || '').trim();
-
-        if(imageInput?.files && imageInput.files[0]){
-          try{
-            imageLink = await readAsDataURL(imageInput.files[0]);
-          } catch {
-            alert('Failed to read selected image.');
-            return;
-          }
-        }
-
-        if(videoInput?.files && videoInput.files[0]){
-          try{
-            videoLink = await readAsDataURL(videoInput.files[0]);
-          } catch {
-            alert('Failed to read selected video.');
-            return;
-          }
-        }
-
-        // Ensure feature fields exist so the product object natively holds them.
-        // They will be edited later by the client-side arrays syncing framework.
-        // (For now, we preserve existing values on edit.)
-        // (No-op placeholder: defaults are created in ensureInventoryProductShape.)
+        const description = (document.getElementById('inv-description')?.value || '').trim();
+        const benefit1 = (document.getElementById('inv-benefit1')?.value || '').trim();
+        const benefit2 = (document.getElementById('inv-benefit2')?.value || '').trim();
+        const benefit3 = (document.getElementById('inv-benefit3')?.value || '').trim();
 
         if(!name){ alert('Name is required.'); return; }
-
         if(!category){ alert('Category is required.'); return; }
-        if(!Number.isFinite(price) || price < 0){ alert('Invalid price.'); return; }
-        if(!Number.isFinite(stockQuantity) || stockQuantity < 0){ alert('Invalid stock.'); return; }
+        if(!Number.isFinite(mrpPrice) || mrpPrice < 0){ alert('Invalid MRP Price.'); return; }
+        if(!Number.isFinite(marketPrice) || marketPrice < 0){ alert('Invalid Market Price.'); return; }
+        if(!Number.isFinite(ourPrice) || ourPrice < 0){ alert('Invalid Our Price.'); return; }
+        if(!Number.isFinite(stockQuantity) || stockQuantity < 0){ alert('Invalid stock quantity.'); return; }
 
-        if(isEdit){
-          const targetId = parseId(product?.id);
-          const p = inventoryProducts.find(x => parseId(x.id) === targetId);
-          if(!p) { alert('Product not found.'); return; }
-          p.name = name;
-          p.category = category;
-          p.price = price;
-          p.stockQuantity = stockQuantity;
-          p.imageLink = imageLink;
-          p.videoLink = videoLink;
-          p.details = details;
-          // keep/preserve features (framework native fields)
-          p.features = p.features && typeof p.features === 'object' ? p.features : DEFAULT_FEATURES();
-        } else {
-          const nextId = inventoryProducts.length ? (Math.max(...inventoryProducts.map(x => Number(x.id)||0)) + 1) : 1;
-          const newProd = {
-            id: nextId,
+        const db = await openNutritionHaveliDB();
+        try{
+          const selectedImages = imagesInput?.files;
+          let imageLinks = imageLinksVal;
+          if(selectedImages && selectedImages.length){
+            imageLinks = await readFilesAsDataURLs(selectedImages, 6);
+          }
+
+          let videoLink = videoHidden?.value || '';
+
+          const nextId = isEdit ? parseId(prod.id) : null;
+          if(isEdit && (nextId === null || nextId === undefined || nextId === '')){
+            alert('Invalid product id.');
+            return;
+          }
+
+          const finalId = isEdit ? nextId : null;
+
+          let existingProducts = [];
+          if(!isEdit){
+            existingProducts = await idbGetAllProducts(db);
+          }
+
+          const idToUse = isEdit ? nextId : getNextProductId(existingProducts);
+
+          const payload = ensureProductShape({
+            id: idToUse,
             name,
-            price,
-            stockQuantity,
             category,
-            details,
-            imageLink,
-            videoLink,
-            features: DEFAULT_FEATURES()
-          };
-          inventoryProducts.push(ensureInventoryProductShape(newProd));
-        }
+            stockQuantity,
+            mrpPrice,
+            marketPrice,
+            ourPrice,
+            description,
+            benefit1,
+            benefit2,
+            benefit3,
+            imageLinks: Array.isArray(imageLinks) ? imageLinks.slice(0,6) : [],
+            videoLink
+          });
 
-        inventoryProducts = inventoryProducts.map(ensureInventoryProductShape).filter(Boolean);
-        // Master-commit for Add/Edit (Requirement #1)
-        saveInventoryProducts();
-        close();
-        renderInventoryView();
+          await idbPutProduct(db, payload);
+
+          close();
+          await seedProductsIfEmpty();
+          await renderInventoryView();
+        } finally {
+          try{ db.close(); } catch{}
+        }
       });
 
     }
+
 
     function ensureInventoryModalNodes(){
       let overlay = document.getElementById('inventory-modal-overlay');
@@ -2004,9 +2215,25 @@
       const wrap = document.getElementById('inventory-view');
       if(!wrap) return;
 
-      seedInventoryProductsIfEmpty();
+      // Fail-safe data loading: IndexedDB -> backup localStorage('inventoryProducts')
+      // Non-destructive: only affects the list used for rendering.
+      let list = [];
+      try{
+        seedInventoryProductsIfEmpty();
+        list = Array.isArray(inventoryProducts) ? inventoryProducts : [];
+        if(!list || !list.length){
+          const backupData = JSON.parse(localStorage.getItem('inventoryProducts') || '[]');
+          if(Array.isArray(backupData) && backupData.length){
+            list = backupData;
+          }
+        }
+      } catch(e){
+        const backupData = JSON.parse(localStorage.getItem('inventoryProducts') || '[]');
+        if(Array.isArray(backupData) && backupData.length){
+          list = backupData;
+        }
+      }
 
-      const list = Array.isArray(inventoryProducts) ? inventoryProducts : [];
 
       // Action bar + table layout (clean)
       let html = '';
