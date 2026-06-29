@@ -2137,10 +2137,14 @@
         const db = await openNutritionHaveliDB();
         try{
           const selectedImages = imagesInput?.files;
-          let imageLinks = imageLinksVal;
+
+          // (1) Multi-image storage fix: always build an array of all images.
+          let images = imageLinksVal;
           if(selectedImages && selectedImages.length){
-            imageLinks = await readFilesAsDataURLs(selectedImages, 6);
+            const dataUrls = await readFilesAsDataURLs(selectedImages, 6);
+            images = Array.isArray(dataUrls) ? dataUrls.slice(0,6) : [];
           }
+          images = Array.isArray(images) ? images.slice(0,6) : [];
 
           let videoLink = videoHidden?.value || '';
 
@@ -2150,15 +2154,9 @@
             return;
           }
 
-          const finalId = isEdit ? nextId : null;
+          const idToUse = isEdit ? nextId : getNextProductId(await idbGetAllProducts(db));
 
-          let existingProducts = [];
-          if(!isEdit){
-            existingProducts = await idbGetAllProducts(db);
-          }
-
-          const idToUse = isEdit ? nextId : getNextProductId(existingProducts);
-
+          // (2) Complete form field extraction fix: map every required field.
           const payload = ensureProductShape({
             id: idToUse,
             name,
@@ -2171,19 +2169,26 @@
             benefit1,
             benefit2,
             benefit3,
-            imageLinks: Array.isArray(imageLinks) ? imageLinks.slice(0,6) : [],
+            imageLinks: images,
             videoLink
           });
 
           await idbPutProduct(db, payload);
 
+          // (3) Complete localStorage sync fix: update the exact array renderInventoryView reads from.
+          inventoryProducts = Array.isArray(inventoryProducts) ? inventoryProducts : [];
+          inventoryProducts = inventoryProducts.filter(x => parseId(x.id) !== parseId(payload.id));
+          inventoryProducts.push(payload);
+          localStorage.setItem('inventoryProducts', JSON.stringify(inventoryProducts));
+
           close();
-          await seedProductsIfEmpty();
           await renderInventoryView();
+          location.reload();
         } finally {
           try{ db.close(); } catch{}
         }
       });
+
 
     }
 
