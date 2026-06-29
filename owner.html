@@ -844,7 +844,7 @@
               <span class="nav-pill">Inventory</span>
             </button>
 
-            <button class="nav-btn" data-view="metrics"
+            <button class="nav-btn" data-view="metrics" type="button" role="tab" aria-selected="false">
               <span class="nav-icon" aria-hidden="true"><i class="fa-solid fa-chart-column"></i></span>
               <span class="nav-title">📊 Metrics Tracker</span>
               <span class="nav-pill">Soon</span>
@@ -1984,6 +1984,9 @@
               <textarea id="inv-description" placeholder="Description...">${escapeHtml(detailsVal)}</textarea>
             </div>
 
+            <input type="hidden" id="product-id-field" value="${escapeHtml(isEdit ? String(prod.id ?? '') : '')}" />
+
+
             <div class="inv-field">
               <label for="inv-benefit1">Benefit 1</label>
               <input id="inv-benefit1" type="text" value="${escapeHtml(b1Val)}" placeholder="Benefit 1" />
@@ -2134,63 +2137,70 @@
         if(!Number.isFinite(ourPrice) || ourPrice < 0){ alert('Invalid Our Price.'); return; }
         if(!Number.isFinite(stockQuantity) || stockQuantity < 0){ alert('Invalid stock quantity.'); return; }
 
-        const db = await openNutritionHaveliDB();
-        try{
-          const selectedImages = imagesInput?.files;
+        // Build payload from ALL modal fields
+        const selectedImages = imagesInput?.files;
 
-          // (1) Multi-image storage fix: always build an array of all images.
-          let images = imageLinksVal;
-          if(selectedImages && selectedImages.length){
-            const dataUrls = await readFilesAsDataURLs(selectedImages, 6);
-            images = Array.isArray(dataUrls) ? dataUrls.slice(0,6) : [];
-          }
-          images = Array.isArray(images) ? images.slice(0,6) : [];
-
-          let videoLink = videoHidden?.value || '';
-
-          const nextId = isEdit ? parseId(prod.id) : null;
-          if(isEdit && (nextId === null || nextId === undefined || nextId === '')){
-            alert('Invalid product id.');
-            return;
-          }
-
-          const idToUse = isEdit ? nextId : getNextProductId(await idbGetAllProducts(db));
-
-          // (2) Complete form field extraction fix: map every required field.
-          const payload = ensureProductShape({
-            id: idToUse,
-            name,
-            category,
-            stockQuantity,
-            mrpPrice,
-            marketPrice,
-            ourPrice,
-            description,
-            benefit1,
-            benefit2,
-            benefit3,
-            imageLinks: images,
-            videoLink
-          });
-
-          await idbPutProduct(db, payload);
-
-          // (3) Complete localStorage sync fix: update the exact array renderInventoryView reads from.
-          inventoryProducts = Array.isArray(inventoryProducts) ? inventoryProducts : [];
-          inventoryProducts = inventoryProducts.filter(x => parseId(x.id) !== parseId(payload.id));
-          inventoryProducts.push(payload);
-          localStorage.setItem('inventoryProducts', JSON.stringify(inventoryProducts));
-
-          close();
-          await renderInventoryView();
-          location.reload();
-        } finally {
-          try{ db.close(); } catch{}
+        let images = imageLinksVal;
+        if(selectedImages && selectedImages.length){
+          const dataUrls = await readFilesAsDataURLs(selectedImages, 6);
+          images = Array.isArray(dataUrls) ? dataUrls.slice(0,6) : [];
         }
+        images = Array.isArray(images) ? images.slice(0,6) : [];
+
+        const imageLink = (images && images.length) ? images[0] : 'images/logo-placeholder.svg';
+        const videoLink = videoHidden?.value || '';
+
+        // PUT vs ADD strictly by hidden product id field
+        const hiddenId = (document.getElementById('product-id-field')?.value || '').trim();
+        const idToUse = hiddenId ? parseId(hiddenId) : null;
+
+        const payload = ensureProductShape({
+          id: idToUse ?? Date.now(),
+          name,
+          category,
+          stockQuantity,
+          mrpPrice,
+          marketPrice,
+          ourPrice,
+          description,
+          benefit1,
+          benefit2,
+          benefit3,
+          imageLinks: images,
+          imageLink,
+          videoLink
+        });
+
+        // Compatibility fields (used by existing renderInventoryView markup)
+        payload.price = payload.ourPrice;
+        payload.details = payload.description;
+
+        // Commit to localStorage mirror (optional) + IndexedDB truth source
+        try{
+          const mirror = Array.isArray(inventoryProducts) ? inventoryProducts : [];
+          const next = mirror
+            .filter(x => parseId(x?.id) !== parseId(payload.id))
+            .concat([payload]);
+          localStorage.setItem('inventoryProducts', JSON.stringify(next));
+        } catch{}
+
+        // IndexedDB write (truth source)
+        try{
+          const db = await openNutritionHaveliDB();
+          try{
+            await idbPutProduct(db, payload);
+          } finally {
+            try{ db.close(); } catch{}
+          }
+        } catch{}
+
+        close();
+        window.location.reload();
       });
 
 
     }
+
 
 
     function ensureInventoryModalNodes(){
@@ -2216,29 +2226,25 @@
       }
     }
 
-    function renderInventoryView(){
+    async function renderInventoryView(){
       const wrap = document.getElementById('inventory-view');
       if(!wrap) return;
 
-      // Fail-safe data loading: IndexedDB -> backup localStorage('inventoryProducts')
-      // Non-destructive: only affects the list used for rendering.
+      // Truth source: IndexedDB -> NutritionHaveliDB/products (must match index.html)
       let list = [];
       try{
-        seedInventoryProductsIfEmpty();
-        list = Array.isArray(inventoryProducts) ? inventoryProducts : [];
-        if(!list || !list.length){
-          const backupData = JSON.parse(localStorage.getItem('inventoryProducts') || '[]');
-          if(Array.isArray(backupData) && backupData.length){
-            list = backupData;
-          }
+        const db = await openNutritionHaveliDB();
+        try{
+          list = await idbGetAllProducts(db);
+        } finally {
+          try{ db.close(); } catch{}
         }
       } catch(e){
-        const backupData = JSON.parse(localStorage.getItem('inventoryProducts') || '[]');
-        if(Array.isArray(backupData) && backupData.length){
-          list = backupData;
-        }
+        list = [];
       }
 
+      // If DB store is empty, show empty UI (no localStorage mirroring at mount)
+      list = Array.isArray(list) ? list.map(ensureProductShape).filter(Boolean) : [];
 
       // Action bar + table layout (clean)
       let html = '';
@@ -2268,13 +2274,13 @@
         html += `<tr class="inv-row"><td colspan="6"><div class="empty" style="margin:0">No inventory products found.</div></td></tr>`;
       } else {
         for(const p of list){
-          const low = Number(p.stockQuantity || 0) <= 3;
-          const imgSrc = (p.imageLink || '').trim() || 'images/logo-placeholder.svg';
+          const low = Number(p.stockQuantity || 0) < 5;
+          const imgSrc = (Array.isArray(p.imageLinks) ? (p.imageLinks[0] || '') : (p.imageLink || '')).trim() || 'images/logo-placeholder.svg';
           const lowBadge = low ? `<span class="inv-low-stock" title="Low stock">⚠️ Low Stock</span>` : '';
           const videoLink = (p.videoLink || '').trim();
-          const detailsText = (p.details || '').trim();
+          const detailsText = (p.details || p.description || '').trim();
           html += `
-            <tr class="inv-row" data-inv-row-id="${escapeHtml(p.id)}" data-video-link="${escapeHtml(videoLink)}" data-details="${escapeHtml(detailsText)}">
+            <tr class="inv-row" data-inv-row-id="${escapeHtml(p.id)}" data-video-link="${escapeHtml(videoLink)}" data-details="${escapeHtml(detailsText)}"> 
 
               <td>
                 <div class="inv-img"><img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(p.name)}" /></div>
@@ -2286,7 +2292,7 @@
                 </div>
               </td>
               <td class="inv-cat">${escapeHtml(p.category)}</td>
-              <td class="inv-price">${formatINR(p.price)}</td>
+              <td class="inv-price">${formatINR(p.ourPrice ?? p.price ?? 0)}</td>
               <td class="inv-stock">${escapeHtml(p.stockQuantity)} Qty</td>
               <td>
                 <div class="inv-actions">
@@ -2311,41 +2317,56 @@
         addBtn.addEventListener('click', () => openInventoryModal('add', null));
       }
 
-      // Attach a click-to-edit helper (works even if new rows are later re-rendered)
-      wrap.querySelectorAll('[data-inv-row-id]').forEach(tr => {
-        tr.addEventListener('dblclick', () => {
-          const id = parseId(tr.getAttribute('data-inv-row-id'));
-          const p = inventoryProducts.find(x => parseId(x.id) === id);
-          if(p) openInventoryModal('edit', p);
-        });
-      });
-
-
       wrap.querySelectorAll('[data-inv-action]').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', async () => {
           const action = btn.getAttribute('data-inv-action');
           const id = parseId(btn.getAttribute('data-inv-id'));
-          const p = inventoryProducts.find(x => parseId(x.id) === id);
-          if(action === 'edit'){
-            openInventoryModal('edit', p);
-          } else if(action === 'delete'){
-            if(!p){ alert('Product not found.'); return; }
-            const ok = confirm(`Delete "${p.name}"?`);
-            if(!ok) return;
-            inventoryProducts = inventoryProducts.filter(x => parseId(x.id) !== id);
-            // Master-commit for Delete (Requirement #1)
-            saveInventoryProducts();
-            renderInventoryView();
 
+          if(action === 'edit'){
+            try{
+              const db = await openNutritionHaveliDB();
+              try{
+                const all = await idbGetAllProducts(db);
+                const p = (all || []).map(ensureProductShape).filter(Boolean).find(x => parseId(x.id) === id);
+                if(p) openInventoryModal('edit', p);
+              } finally {
+                try{ db.close(); } catch{}
+              }
+            } catch{
+              alert('Failed to open product for editing.');
+            }
+            return;
+          }
+
+          if(action === 'delete'){
+            const ok = confirm('Delete this product?');
+            if(!ok) return;
+
+            try{
+              const db = await openNutritionHaveliDB();
+              try{
+                await idbDeleteProduct(db, id);
+                window.location.reload();
+              } finally {
+                try{ db.close(); } catch{}
+              }
+            } catch{
+              alert('Failed to delete product.');
+            }
           }
         });
       });
+
     }
+
 
     // =============================
     // INIT
     // =============================
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Ensure DB has initial content so inventory view hydrates instantly.
+      try{ await seedProductsIfEmpty(); } catch{}
+
       initTabs();
       initTrashModal();
       updateTrashCounter();
