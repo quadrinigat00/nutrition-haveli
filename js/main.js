@@ -257,55 +257,6 @@ function initLazyLoading() {
 
 
 // ============================================
-// HERO CINEMATIC ENTRANCE ANIMATION
-// ============================================
-function initHeroCinematicAnimation() {
-    const heroTitle = document.querySelector('.hero-title');
-    const heroSubtitle = document.querySelector('.hero-subtitle');
-    const heroButtons = document.querySelectorAll('.hero-cta .btn');
-
-    if (!heroTitle || !heroSubtitle || !heroButtons.length) return;
-
-    gsap.set([heroTitle, heroSubtitle], {
-        opacity: 0,
-        scale: 1.2,
-        filter: 'blur(16px)',
-        transformOrigin: 'center center'
-    });
-
-    gsap.set(heroButtons, {
-        opacity: 0,
-        y: 40,
-        transformOrigin: 'center center'
-    });
-
-    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-
-    tl.to(heroTitle, {
-        duration: 1.1,
-        opacity: 1,
-        scale: 1,
-        filter: 'blur(0px)',
-        y: 0
-    })
-    .to(heroSubtitle, {
-        duration: 0.9,
-        opacity: 1,
-        scale: 1,
-        filter: 'blur(0px)',
-        y: 0
-    }, '-=0.65')
-    .to(heroButtons, {
-        duration: 0.8,
-        opacity: 1,
-        y: 0,
-        stagger: 0.15,
-        ease: 'power3.out'
-    }, '-=0.2');
-}
-
-
-// ============================================
 // WHATSAPP BUTTON TRACKING (Optional)
 // ============================================
 function trackWhatsAppClick(productName) {
@@ -338,18 +289,9 @@ function handleInquiryForm(event) {
 // ADDITIONAL HELPER FUNCTIONS
 // ============================================
 
-// Format phone number for WhatsApp
-function formatWhatsAppNumber(phone) {
-    // Remove all non-digit characters
-    return phone.replace(/\D/g, '');
-}
-
-// Generate WhatsApp link with pre-filled message
-function generateWhatsAppLink(phone, message) {
-    const formattedPhone = formatWhatsAppNumber(phone);
-    const encodedMessage = encodeURIComponent(message);
-    return `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
-}
+// WhatsApp helpers live in the shared NH namespace (js/nh-utils.js)
+const formatWhatsAppNumber = NH.formatWhatsAppNumber;
+const generateWhatsAppLink = NH.buildWhatsAppLink;
 
 // Debounce function for performance
 function debounce(func, wait) {
@@ -676,17 +618,12 @@ function renderInventoryProductsToGrid() {
     const grid = document.querySelector('#products-grid') || document.querySelector('.products-grid');
     if (!grid) return;
 
-    const escapeHtml = (str) => String(str ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '<')
-        .replace(/>/g, '>')
-        .replace(/"/g, '"')
-        .replace(/'/g, '&#039;');
+    const escapeHtml = NH.escapeHtml;
 
     grid.innerHTML = '';
 
-    openNutritionHaveliDB('products')
-        .then(fetchAllProductsFromDB)
+    NH.openProductsDB()
+        .then((db) => NH.getAllProducts(db).finally(() => { try { db.close(); } catch {} }))
         .then((products) => {
             if (!Array.isArray(products)) return;
 
@@ -734,7 +671,7 @@ function renderInventoryProductsToGrid() {
                         <div class="product-info">
                             <h3 class="product-name">${escapeHtml(name)}</h3>
                             <p class="product-desc">${escapeHtml(desc)}</p>
-                            <a href="https://wa.me/919827676474?text=${encodeURIComponent(cardPriceAnchorText)}" class="btn btn-product" target="_blank" rel="noopener noreferrer">
+                            <a href="${NH.orderWhatsAppLink(cardPriceAnchorText)}" class="btn btn-product" target="_blank" rel="noopener noreferrer">
                                 <i class="fab fa-whatsapp"></i>
                                 <span>Order Now</span>
                             </a>
@@ -752,58 +689,6 @@ function renderInventoryProductsToGrid() {
             console.error('Failed to render products from IndexedDB:', err);
         });
 }
-
-function openNutritionHaveliDB(storeName) {
-    const DB_NAME = 'NutritionHaveliDB';
-    const DB_VERSION = 1;
-
-    return new Promise((resolve, reject) => {
-        try {
-            const req = indexedDB.open(DB_NAME, DB_VERSION);
-            req.onupgradeneeded = function (e) {
-                const db = e.target.result;
-                if (!db.objectStoreNames.contains(storeName)) {
-                    db.createObjectStore(storeName, { keyPath: 'id' });
-                }
-            };
-            req.onsuccess = function () {
-                resolve(req.result);
-            };
-            req.onerror = function () {
-                reject(req.error || new Error('Failed to open NutritionHaveliDB'));
-            };
-        } catch (err) {
-            reject(err);
-        }
-    });
-}
-
-function fetchAllProductsFromDB(db) {
-    return new Promise((resolve, reject) => {
-        try {
-            const tx = db.transaction(['products'], 'readonly');
-            const store = tx.objectStore('products');
-            const req = store.getAll();
-            req.onsuccess = function () {
-                resolve(Array.isArray(req.result) ? req.result : []);
-            };
-            req.onerror = function () {
-                reject(req.error || new Error('Failed to fetch products'));
-            };
-            tx.oncomplete = function () {
-                try { db.close(); } catch {}
-            };
-            tx.onabort = function () {
-                try { db.close(); } catch {}
-            };
-        } catch (err) {
-            reject(err);
-        }
-    });
-}
-
-
-
 
 function initProductsEnhancements() {
     const productsSection = document.querySelector('#products');
@@ -852,10 +737,7 @@ function initProductsEnhancements() {
         checkoutPhoneInput.value = prefix;
     }
 
-    function formatINR(value) {
-        const num = Number(value) || 0;
-        return '₹' + num.toLocaleString('en-IN');
-    }
+    const formatINR = NH.formatINR;
 
     function openCheckoutModal(items, options) {
         const normalizedItems = (items || []).map((item) => ({
@@ -987,7 +869,7 @@ function initProductsEnhancements() {
         }
         // =========================================================================
 
-        const url = `https://wa.me/919827676474?text=${encodeURIComponent(message)}`;
+        const url = NH.orderWhatsAppLink(message);
         window.open(url, '_blank', 'noopener,noreferrer');
         closeCheckoutModal();
         });
@@ -1540,7 +1422,7 @@ function buildProductData(card, idx) {
                         const quantity = item.quantity || item.qty || 1;
                         const sub = document.createElement('div');
                         sub.className = 'ecommerce-item-sub';
-                        sub.textContent = `Qty ${quantity} • ₹${(item.our * quantity).toLocaleString('en-IN')}`;
+                        sub.textContent = `Qty ${quantity} • ${formatINR(item.our * quantity)}`;
 
                         meta.appendChild(name);
                         meta.appendChild(sub);
@@ -1615,7 +1497,7 @@ function buildProductData(card, idx) {
                 }
 
                 const total = state.cart.reduce((sum, item) => sum + item.our * (item.quantity || 1), 0);
-                totalPrice.textContent = `₹${total.toLocaleString('en-IN')}`;
+                totalPrice.textContent = formatINR(total);
                 orderBtn.disabled = items.length === 0;
                 orderBtn.classList.toggle('disabled', items.length === 0);
             }
@@ -1656,7 +1538,7 @@ function buildProductData(card, idx) {
 
                         const sub = document.createElement('div');
                         sub.className = 'ecommerce-item-sub';
-                        sub.textContent = `₹${item.our.toLocaleString('en-IN')} • Loved item`;
+                        sub.textContent = `${formatINR(item.our)} • Loved item`;
 
                         meta.appendChild(name);
                         meta.appendChild(sub);
