@@ -30,12 +30,29 @@ const PORT = process.env.PORT || 3000;
 // MIDDLEWARE
 // ============================================
 
-// CORS - Allow cross-origin requests
-app.use(cors());
+// Do not advertise the framework in responses
+app.disable('x-powered-by');
 
-// Body parser - Parse JSON request bodies
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+// CORS - Restrict cross-origin requests to an explicit allowlist.
+// Configure via the CORS_ORIGINS env var (comma-separated origins).
+// When unset, only same-origin requests (no Origin header) are allowed.
+const allowedOrigins = (process.env.CORS_ORIGINS || '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow same-origin / non-browser requests (no Origin header).
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error('Not allowed by CORS'));
+    }
+}));
+
+// Body parser - Parse JSON request bodies (with a size limit to mitigate abuse)
+app.use(bodyParser.json({ limit: '10kb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '10kb' }));
 
 // Static files - Serve frontend files
 app.use(express.static(path.join(__dirname, '..')));
@@ -122,10 +139,52 @@ app.get('/api/products', (req, res) => {
     res.json(products);
 });
 
+// Basic in-memory rate limiter for the inquiry endpoint to mitigate spam/abuse.
+const INQUIRY_WINDOW_MS = 60 * 1000;
+const INQUIRY_MAX_PER_WINDOW = 5;
+const inquiryHits = new Map();
+
+function inquiryRateLimit(req, res, next) {
+    const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+    const now = Date.now();
+    const entry = inquiryHits.get(ip);
+
+    if (!entry || now - entry.start > INQUIRY_WINDOW_MS) {
+        inquiryHits.set(ip, { start: now, count: 1 });
+        return next();
+    }
+
+    if (entry.count >= INQUIRY_MAX_PER_WINDOW) {
+        return res.status(429).json({
+            success: false,
+            message: 'Too many requests. Please try again later.'
+        });
+    }
+
+    entry.count += 1;
+    next();
+}
+
+// Coerce a value to a trimmed string and cap its length to avoid oversized input.
+function sanitizeField(value, maxLength) {
+    if (typeof value !== 'string') return '';
+    // Strip control characters (incl. CR/LF) to prevent log injection.
+    return value.replace(/[\u0000-\u001F\u007F]/g, ' ').trim().slice(0, maxLength);
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_RE = /^[+\d][\d\s().-]{6,19}$/;
+
 // Submit inquiry form
-app.post('/api/inquiry', (req, res) => {
-    const { name, phone, email, product, message } = req.body;
-    
+app.post('/api/inquiry', inquiryRateLimit, (req, res) => {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+
+    const name = sanitizeField(body.name, 100);
+    const phone = sanitizeField(body.phone, 20);
+    const email = sanitizeField(body.email, 254);
+    const product = sanitizeField(body.product, 100);
+    const message = sanitizeField(body.message, 1000);
+
     // Validate required fields
     if (!name || !phone) {
         return res.status(400).json({
@@ -133,23 +192,29 @@ app.post('/api/inquiry', (req, res) => {
             message: 'Name and phone number are required'
         });
     }
-    
+
+    if (!PHONE_RE.test(phone)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Please provide a valid phone number'
+        });
+    }
+
+    if (email && !EMAIL_RE.test(email)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Please provide a valid email address'
+        });
+    }
+
     // In a production environment, you would:
     // 1. Save to database
     // 2. Send notification email to business owner
     // 3. Send confirmation SMS/WhatsApp to customer
-    
-    // For now, we'll log the inquiry and return success
-    console.log('New Inquiry Received:');
-    console.log({
-        name,
-        phone,
-        email: email || 'Not provided',
-        product: product || 'General',
-        message: message || 'No message',
-        timestamp: new Date().toISOString()
-    });
-    
+
+    // For now, log only non-sensitive metadata (avoid logging customer PII).
+    console.log('New inquiry received at', new Date().toISOString(), '| product:', product || 'General');
+
     res.json({
         success: true,
         message: 'Thank you for your inquiry! We will contact you soon.'
@@ -192,7 +257,13 @@ app.use((req, res) => {
 // ERROR HANDLER
 // ============================================
 app.use((err, req, res, next) => {
-    console.error('Error:', err);
+    if (err && err.message === 'Not allowed by CORS') {
+        return res.status(403).json({
+            error: 'Forbidden',
+            message: 'Origin not allowed'
+        });
+    }
+    console.error('Error:', err && err.message ? err.message : err);
     res.status(500).json({
         error: 'Internal Server Error',
         message: 'Something went wrong. Please try again later.'
