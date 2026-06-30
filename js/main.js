@@ -750,6 +750,7 @@ function renderInventoryProductsToGrid() {
         })
         .catch((err) => {
             console.error('Failed to render products from IndexedDB:', err);
+            grid.innerHTML = '<p class="products-load-error" style="grid-column:1 / -1;text-align:center;color:rgba(255,255,255,.7);">Unable to load products right now. Please refresh the page.</p>';
         });
 }
 
