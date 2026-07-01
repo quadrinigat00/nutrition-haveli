@@ -1967,6 +1967,44 @@ body.hindi .logo-text-footer {
     max-height: 380px;
 }
 
+.products-media-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.products-media-prev,
+.products-media-next {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--color-white);
+    font-size: 1.15rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.products-media-prev:hover,
+.products-media-next:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.22);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.28);
+}
+
+.products-media-prev:focus,
+.products-media-next:focus {
+    outline: 2px solid rgba(255, 255, 255, 0.95);
+    outline-offset: 3px;
+}
+
 .products-modal-right {
     display: flex;
     flex-direction: column;
