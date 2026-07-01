@@ -1248,6 +1248,10 @@ function buildProductData(card, idx) {
 
     let activeProduct = null;
     let lastFocus = null;
+    let mediaItems = [];
+    let activeMediaIndex = 0;
+    let touchStartX = null;
+    let touchStartY = null;
 
     const modalOverlay = document.createElement('div');
     modalOverlay.className = 'products-modal-overlay';
@@ -1291,27 +1295,42 @@ function buildProductData(card, idx) {
 
     const mediaNav = document.createElement('div');
     mediaNav.className = 'products-media-nav';
+<<<<<<< Updated upstream
     mediaNav.style.display = 'flex';
     mediaNav.style.justifyContent = 'space-between';
     mediaNav.style.alignItems = 'center';
     mediaNav.style.marginTop = '10px';
+=======
+>>>>>>> Stashed changes
 
     const prevMediaBtn = document.createElement('button');
     prevMediaBtn.type = 'button';
     prevMediaBtn.className = 'products-media-prev';
     prevMediaBtn.textContent = '◀';
+<<<<<<< Updated upstream
     prevMediaBtn.disabled = true;
 
     const mediaCounter = document.createElement('div');
     mediaCounter.className = 'products-media-counter';
     mediaCounter.style.fontSize = '0.9rem';
     mediaCounter.style.color = 'rgba(255,255,255,.75)';
+=======
+    prevMediaBtn.setAttribute('aria-label', 'Previous media');
+
+    const mediaCounter = document.createElement('div');
+    mediaCounter.className = 'products-media-counter';
+    mediaCounter.textContent = '';
+>>>>>>> Stashed changes
 
     const nextMediaBtn = document.createElement('button');
     nextMediaBtn.type = 'button';
     nextMediaBtn.className = 'products-media-next';
     nextMediaBtn.textContent = '▶';
+<<<<<<< Updated upstream
     nextMediaBtn.disabled = true;
+=======
+    nextMediaBtn.setAttribute('aria-label', 'Next media');
+>>>>>>> Stashed changes
 
     mediaNav.appendChild(prevMediaBtn);
     mediaNav.appendChild(mediaCounter);
@@ -1383,6 +1402,7 @@ function buildProductData(card, idx) {
     modalOverlay.appendChild(modalCard);
     document.body.appendChild(modalOverlay);
 
+<<<<<<< Updated upstream
     let mediaItems = [];
     let activeMediaIndex = 0;
 
@@ -1392,6 +1412,8 @@ function buildProductData(card, idx) {
         return lower.startsWith('data:video') || lower.endsWith('.mp4') || lower.endsWith('.webm') || lower.endsWith('.ogg') || lower.includes('video/');
     };
 
+=======
+>>>>>>> Stashed changes
     const updateMediaNavigation = () => {
         const count = mediaItems.length;
         mediaCounter.textContent = count ? `${activeMediaIndex + 1}/${count}` : '';
@@ -1406,8 +1428,13 @@ function buildProductData(card, idx) {
             leftVideo.style.display = 'none';
             leftVideo.pause();
             leftVideo.src = '';
+<<<<<<< Updated upstream
             leftImg.src = '';
             leftImg.alt = 'Product';
+=======
+            leftImg.src = activeProduct?.imgSrc || '';
+            leftImg.alt = activeProduct?.imgAlt || 'Product';
+>>>>>>> Stashed changes
             updateMediaNavigation();
             return;
         }
@@ -1425,24 +1452,77 @@ function buildProductData(card, idx) {
             leftVideo.style.display = 'none';
             leftImg.style.display = 'block';
             leftImg.src = item;
+<<<<<<< Updated upstream
             leftImg.alt = (activeProduct && activeProduct.imgAlt) ? activeProduct.imgAlt : 'Product';
+=======
+            leftImg.alt = activeProduct?.imgAlt || 'Product';
+>>>>>>> Stashed changes
         }
         updateMediaNavigation();
     };
 
+<<<<<<< Updated upstream
     prevMediaBtn.addEventListener('click', () => {
+=======
+    const goToPrevMedia = () => {
+>>>>>>> Stashed changes
         if (activeMediaIndex > 0) {
             activeMediaIndex -= 1;
             renderProductMedia();
         }
+<<<<<<< Updated upstream
     });
 
     nextMediaBtn.addEventListener('click', () => {
+=======
+    };
+
+    const goToNextMedia = () => {
+>>>>>>> Stashed changes
         if (activeMediaIndex < mediaItems.length - 1) {
             activeMediaIndex += 1;
             renderProductMedia();
         }
+<<<<<<< Updated upstream
     });
+=======
+    };
+
+    const handleTouchStart = (event) => {
+        if (!event.touches || event.touches.length !== 1) return;
+        touchStartX = event.touches[0].clientX;
+        touchStartY = event.touches[0].clientY;
+    };
+
+    const handleTouchEnd = (event) => {
+        if (touchStartX === null || !event.changedTouches || event.changedTouches.length !== 1) {
+            touchStartX = null;
+            touchStartY = null;
+            return;
+        }
+
+        const touchEndX = event.changedTouches[0].clientX;
+        const touchEndY = event.changedTouches[0].clientY;
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = touchEndY - touchStartY;
+
+        if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY)) {
+            if (deltaX > 0) {
+                goToPrevMedia();
+            } else {
+                goToNextMedia();
+            }
+        }
+
+        touchStartX = null;
+        touchStartY = null;
+    };
+
+    prevMediaBtn.addEventListener('click', goToPrevMedia);
+    nextMediaBtn.addEventListener('click', goToNextMedia);
+    leftMedia.addEventListener('touchstart', handleTouchStart, { passive: true });
+    leftMedia.addEventListener('touchend', handleTouchEnd, { passive: true });
+>>>>>>> Stashed changes
 
     function openProductsDetails(productData) {
         activeProduct = productData;
@@ -1503,8 +1583,23 @@ function buildProductData(card, idx) {
     });
 
     document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && modalOverlay.classList.contains('active')) {
+        if (!modalOverlay.classList.contains('active')) return;
+
+        if (e.key === 'Escape') {
             closeProductsDetails();
+            return;
+        }
+
+        if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            goToPrevMedia();
+            return;
+        }
+
+        if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            goToNextMedia();
+            return;
         }
     });
 
