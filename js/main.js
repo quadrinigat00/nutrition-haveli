@@ -723,6 +723,10 @@ function renderInventoryProductsToGrid() {
                     const card = document.createElement('div');
                     card.className = 'product-card';
                     card.dataset.productId = String(id);
+                    card.dataset.mrp = String(p.mrpPrice ?? p.price ?? p.ourPrice ?? 0);
+                    card.dataset.market = String(p.marketPrice ?? p.market ?? 0);
+                    card.dataset.our = String(p.ourPrice ?? p.price ?? 0);
+                    card.dataset.productDesc = String(desc);
 
                     const cardPriceAnchorText = `I want to buy ${name}`;
 
@@ -1014,9 +1018,10 @@ function buildProductData(card, idx) {
         const productId = card.dataset.productId;
         const key = productId ? `inv-${productId}` : name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
-        // Pull details directly from the DOM (renderInventoryProductsToGrid already built them from IndexedDB)
-        // Fallback to empty where not available.
-        const description = desc || '';
+        const mrp = Number(card.dataset.mrp || 0);
+        const market = Number(card.dataset.market || 0);
+        const our = Number(card.dataset.our || 0);
+        const description = desc || card.dataset.productDesc || '';
 
         // Expected owner schema fields inside the product record:
         // description, benefit1/2/3, mrpPrice/marketPrice/ourPrice, imageLinks
@@ -1026,13 +1031,6 @@ function buildProductData(card, idx) {
             'Quality ingredients for consistent results',
             'Designed for everyday gym progress'
         ];
-
-        // Pricing: use ourPrice for all selling math; but since card HTML doesn't include it,
-        // keep legacy synthetic defaults only as a final fallback.
-        const base = 999 + idx * 250;
-        const mrp = base + 350;
-        const market = base;
-        const our = Math.max(199, Math.round(base * 0.74));
 
         return { key, name, desc: description, imgSrc, imgAlt, mrp, market, our, benefitsList };
     }

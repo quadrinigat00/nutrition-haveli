@@ -1718,17 +1718,25 @@
 
       o.mrpPrice = numSafe(o.mrpPrice);
       o.marketPrice = numSafe(o.marketPrice);
-      o.ourPrice = numSafe(o.ourPrice);
+      o.ourPrice = numSafe(o.ourPrice ?? o.price ?? 0);
+      o.price = o.ourPrice;
 
-      o.description = safe(o.description).toString();
-      o.benefit1 = safe(o.benefit1).toString();
-      o.benefit2 = safe(o.benefit2).toString();
-      o.benefit3 = safe(o.benefit3).toString();
+      // Preserve inventory/consumer web fields exactly:
+      // - description -> o.description (and details compatibility)
+      // - benefits 1/2/3 -> o.benefit1/2/3
+      // - videoLink -> o.videoLink
+      // - images -> o.imageLinks (array)
+      o.description = safe(o.description ?? o.details).toString();
+      o.details = safe(o.details ?? o.description).toString();
+      o.benefit1 = safe(o.benefit1 ?? o.profit1).toString();
+      o.benefit2 = safe(o.benefit2 ?? o.profit2).toString();
+      o.benefit3 = safe(o.benefit3 ?? o.profit3).toString();
 
-      o.imageLinks = arrSafe(o.imageLinks);
-      o.videoLink = safe(o.videoLink).toString();
+      o.imageLinks = arrSafe(o.imageLinks ?? o.images ?? []);
+      o.videoLink = safe(o.videoLink ?? o.videoLinkUrl ?? o.video ?? '').toString();
 
       o.stockQuantity = numSafe(o.stockQuantity);
+
       return o;
     }
 
@@ -2068,33 +2076,51 @@
 
       renderInitialThumbs();
 
+      // Image syncing: append new images (max 6) instead of overwriting.
+      let currentModalImages = Array.isArray(imageLinksVal) ? imageLinksVal.slice(0, 6) : [];
+
+      const renderModalImageThumbs = () => {
+        if(!imagesThumbs) return;
+        imagesThumbs.innerHTML = '';
+        currentModalImages.slice(0, 6).forEach((src, i) => {
+          const wrap = document.createElement('div');
+          wrap.style.width = '70px';
+          wrap.style.height = '70px';
+          wrap.style.borderRadius = '12px';
+          wrap.style.overflow = 'hidden';
+          wrap.style.border = '1px solid rgba(255,255,255,.10)';
+          wrap.style.background = 'rgba(255,255,255,.04)';
+          const img = document.createElement('img');
+          img.src = src;
+          img.alt = `Selected Image ${i+1}`;
+          img.style.width = '100%';
+          img.style.height = '100%';
+          img.style.objectFit = 'cover';
+          img.onerror = () => { img.style.display = 'none'; };
+          wrap.appendChild(img);
+          imagesThumbs.appendChild(wrap);
+        });
+      };
+
+      renderModalImageThumbs();
+
       imagesInput?.addEventListener('change', async () => {
         try{
           if(!imagesThumbs) return;
-          imagesThumbs.innerHTML = '';
           const selected = imagesInput?.files;
-          if(!selected || !selected.length){
+          if(!selected || !selected.length) return;
+
+          const remaining = Math.max(0, 6 - (currentModalImages.length || 0));
+          if(remaining <= 0){
+            alert('You can add up to 6 images.');
             return;
           }
-          const dataUrls = await readFilesAsDataURLs(selected, 6);
-          dataUrls.forEach((src, i) => {
-            const wrap = document.createElement('div');
-            wrap.style.width = '70px';
-            wrap.style.height = '70px';
-            wrap.style.borderRadius = '12px';
-            wrap.style.overflow = 'hidden';
-            wrap.style.border = '1px solid rgba(255,255,255,.10)';
-            wrap.style.background = 'rgba(255,255,255,.04)';
-            const img = document.createElement('img');
-            img.src = src;
-            img.alt = `Selected Image ${i+1}`;
-            img.style.width = '100%';
-            img.style.height = '100%';
-            img.style.objectFit = 'cover';
-            img.onerror = () => { img.style.display = 'none'; };
-            wrap.appendChild(img);
-            imagesThumbs.appendChild(wrap);
-          });
+
+          const dataUrls = await readFilesAsDataURLs(selected, remaining);
+          const next = Array.isArray(dataUrls) ? dataUrls : [];
+          currentModalImages = (currentModalImages || []).concat(next).slice(0, 6);
+
+          renderModalImageThumbs();
         } catch{
           alert('Failed to preview images.');
         }
@@ -2137,16 +2163,8 @@
         if(!Number.isFinite(ourPrice) || ourPrice < 0){ alert('Invalid Our Price.'); return; }
         if(!Number.isFinite(stockQuantity) || stockQuantity < 0){ alert('Invalid stock quantity.'); return; }
 
-        // Build payload from ALL modal fields
-        const selectedImages = imagesInput?.files;
-
-        let images = imageLinksVal;
-        if(selectedImages && selectedImages.length){
-          const dataUrls = await readFilesAsDataURLs(selectedImages, 6);
-          images = Array.isArray(dataUrls) ? dataUrls.slice(0,6) : [];
-        }
-        images = Array.isArray(images) ? images.slice(0,6) : [];
-
+        // Build payload from ALL modal fields, preserving appended image thumbnails.
+        const images = Array.isArray(currentModalImages) ? currentModalImages.slice(0, 6) : [];
         const imageLink = (images && images.length) ? images[0] : 'images/logo-placeholder.svg';
         const videoLink = videoHidden?.value || '';
 
@@ -2162,7 +2180,9 @@
           mrpPrice,
           marketPrice,
           ourPrice,
+          price: ourPrice,
           description,
+          details: description,
           benefit1,
           benefit2,
           benefit3,
@@ -2176,12 +2196,15 @@
         payload.details = payload.description;
 
         // Commit to localStorage mirror (optional) + IndexedDB truth source
+        let savedProducts = [];
         try{
           const mirror = Array.isArray(inventoryProducts) ? inventoryProducts : [];
           const next = mirror
             .filter(x => parseId(x?.id) !== parseId(payload.id))
             .concat([payload]);
           localStorage.setItem('inventoryProducts', JSON.stringify(next));
+          localStorage.setItem('inventoryProductsMaster', JSON.stringify(next));
+          savedProducts = next;
         } catch{}
 
         // IndexedDB write (truth source)
@@ -2194,8 +2217,16 @@
           }
         } catch{}
 
-        close();
-        window.location.reload();
+        // Sync to backend immediately after localStorage mirror update.
+        try{
+          await fetch('/api/products/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(savedProducts)
+          }).then(() => window.location.reload());
+        } catch(err){
+          console.error('Product sync failed:', err);
+        }
       });
 
 
@@ -2346,7 +2377,26 @@
               const db = await openNutritionHaveliDB();
               try{
                 await idbDeleteProduct(db, id);
-                window.location.reload();
+
+                // Update inventory mirror in localStorage before syncing.
+                let nextMirror = [];
+                try{
+                  const currentMirror = safeParse('inventoryProducts', []);
+                  nextMirror = Array.isArray(currentMirror) ? currentMirror.filter(x => parseId(x?.id) !== id) : [];
+                  localStorage.setItem('inventoryProducts', JSON.stringify(nextMirror));
+                  localStorage.setItem('inventoryProductsMaster', JSON.stringify(nextMirror));
+                } catch{}
+
+                // Sync to backend immediately after localStorage mirror update.
+                try{
+                  await fetch('/api/products/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(nextMirror)
+                  }).then(() => window.location.reload());
+                } catch(err){
+                  console.error('Product sync failed:', err);
+                }
               } finally {
                 try{ db.close(); } catch{}
               }
