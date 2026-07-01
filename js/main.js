@@ -727,6 +727,8 @@ function renderInventoryProductsToGrid() {
                     card.dataset.market = String(p.marketPrice ?? p.market ?? 0);
                     card.dataset.our = String(p.ourPrice ?? p.price ?? 0);
                     card.dataset.productDesc = String(desc);
+                    card.dataset.imageLinks = JSON.stringify(Array.isArray(p.imageLinks) ? p.imageLinks : []);
+                    card.dataset.videoLink = String(p.videoLink ?? p.video ?? '');
 
                     const cardPriceAnchorText = `I want to buy ${name}`;
 
@@ -1021,10 +1023,18 @@ function buildProductData(card, idx) {
         const mrp = Number(card.dataset.mrp || 0);
         const market = Number(card.dataset.market || 0);
         const our = Number(card.dataset.our || 0);
+        const imageLinks = (() => {
+            try {
+                return JSON.parse(card.dataset.imageLinks || '[]');
+            } catch {
+                return [];
+            }
+        })();
+        const videoLink = String(card.dataset.videoLink || '');
         const description = desc || card.dataset.productDesc || '';
 
         // Expected owner schema fields inside the product record:
-        // description, benefit1/2/3, mrpPrice/marketPrice/ourPrice, imageLinks
+        // description, benefit1/2/3, mrpPrice/marketPrice/ourPrice, imageLinks, videoLink
         // Since we render only description/name/image in card HTML, keep a safe benefits fallback.
         const benefitsList = [
             'Supports performance & recovery',
@@ -1032,7 +1042,7 @@ function buildProductData(card, idx) {
             'Designed for everyday gym progress'
         ];
 
-        return { key, name, desc: description, imgSrc, imgAlt, mrp, market, our, benefitsList };
+        return { key, name, desc: description, imgSrc, imgAlt, mrp, market, our, benefitsList, imageLinks, videoLink };
     }
 
 
@@ -1263,10 +1273,54 @@ function buildProductData(card, idx) {
     const left = document.createElement('div');
     left.className = 'products-modal-image';
 
+    const leftMedia = document.createElement('div');
+    leftMedia.className = 'products-modal-media';
+
     const leftImg = document.createElement('img');
     leftImg.alt = 'Product';
     leftImg.src = '';
-    left.appendChild(leftImg);
+    leftImg.className = 'products-media-image';
+
+    const leftVideo = document.createElement('video');
+    leftVideo.controls = true;
+    leftVideo.preload = 'metadata';
+    leftVideo.style.display = 'none';
+    leftVideo.style.width = '100%';
+    leftVideo.style.maxHeight = '400px';
+    leftVideo.className = 'products-media-video';
+
+    const mediaNav = document.createElement('div');
+    mediaNav.className = 'products-media-nav';
+    mediaNav.style.display = 'flex';
+    mediaNav.style.justifyContent = 'space-between';
+    mediaNav.style.alignItems = 'center';
+    mediaNav.style.marginTop = '10px';
+
+    const prevMediaBtn = document.createElement('button');
+    prevMediaBtn.type = 'button';
+    prevMediaBtn.className = 'products-media-prev';
+    prevMediaBtn.textContent = '◀';
+    prevMediaBtn.disabled = true;
+
+    const mediaCounter = document.createElement('div');
+    mediaCounter.className = 'products-media-counter';
+    mediaCounter.style.fontSize = '0.9rem';
+    mediaCounter.style.color = 'rgba(255,255,255,.75)';
+
+    const nextMediaBtn = document.createElement('button');
+    nextMediaBtn.type = 'button';
+    nextMediaBtn.className = 'products-media-next';
+    nextMediaBtn.textContent = '▶';
+    nextMediaBtn.disabled = true;
+
+    mediaNav.appendChild(prevMediaBtn);
+    mediaNav.appendChild(mediaCounter);
+    mediaNav.appendChild(nextMediaBtn);
+
+    leftMedia.appendChild(leftImg);
+    leftMedia.appendChild(leftVideo);
+    leftMedia.appendChild(mediaNav);
+    left.appendChild(leftMedia);
 
     const right = document.createElement('div');
     right.className = 'products-modal-right';
@@ -1329,14 +1383,86 @@ function buildProductData(card, idx) {
     modalOverlay.appendChild(modalCard);
     document.body.appendChild(modalOverlay);
 
+    let mediaItems = [];
+    let activeMediaIndex = 0;
+
+    const isVideoSource = (src) => {
+        if (!src || typeof src !== 'string') return false;
+        const lower = src.toLowerCase();
+        return lower.startsWith('data:video') || lower.endsWith('.mp4') || lower.endsWith('.webm') || lower.endsWith('.ogg') || lower.includes('video/');
+    };
+
+    const updateMediaNavigation = () => {
+        const count = mediaItems.length;
+        mediaCounter.textContent = count ? `${activeMediaIndex + 1}/${count}` : '';
+        prevMediaBtn.disabled = activeMediaIndex <= 0;
+        nextMediaBtn.disabled = activeMediaIndex >= count - 1;
+    };
+
+    const renderProductMedia = () => {
+        const item = mediaItems[activeMediaIndex];
+        if (!item) {
+            leftImg.style.display = 'block';
+            leftVideo.style.display = 'none';
+            leftVideo.pause();
+            leftVideo.src = '';
+            leftImg.src = '';
+            leftImg.alt = 'Product';
+            updateMediaNavigation();
+            return;
+        }
+
+        const showVideo = isVideoSource(item);
+        if (showVideo) {
+            leftImg.style.display = 'none';
+            leftVideo.style.display = 'block';
+            leftVideo.src = item;
+            leftVideo.alt = 'Product video';
+            leftVideo.load();
+            leftVideo.currentTime = 0;
+        } else {
+            leftVideo.pause();
+            leftVideo.style.display = 'none';
+            leftImg.style.display = 'block';
+            leftImg.src = item;
+            leftImg.alt = (activeProduct && activeProduct.imgAlt) ? activeProduct.imgAlt : 'Product';
+        }
+        updateMediaNavigation();
+    };
+
+    prevMediaBtn.addEventListener('click', () => {
+        if (activeMediaIndex > 0) {
+            activeMediaIndex -= 1;
+            renderProductMedia();
+        }
+    });
+
+    nextMediaBtn.addEventListener('click', () => {
+        if (activeMediaIndex < mediaItems.length - 1) {
+            activeMediaIndex += 1;
+            renderProductMedia();
+        }
+    });
+
     function openProductsDetails(productData) {
         activeProduct = productData;
         lastFocus = document.activeElement;
 
         titleEl.textContent = productData.name;
         descEl.textContent = productData.desc || '';
-        leftImg.src = productData.imgSrc;
-        leftImg.alt = productData.imgAlt;
+
+        const preservedImages = Array.isArray(productData.imageLinks) ? productData.imageLinks.slice(0, 6) : [];
+        const preservedVideo = String(productData.videoLink || '').trim();
+        mediaItems = preservedImages.slice();
+        if (preservedVideo) {
+            mediaItems.push(preservedVideo);
+        }
+        if (!mediaItems.length) {
+            mediaItems = [productData.imgSrc || ''];
+        }
+
+        activeMediaIndex = 0;
+        renderProductMedia();
 
         benefitsUl.innerHTML = '';
         productData.benefitsList.forEach((item) => {
