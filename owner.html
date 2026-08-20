@@ -954,6 +954,7 @@
     </div>
   </div>
 
+  <script src="js/nh-utils.js"></script>
   <script>
     // =============================
     // STATE (localStorage channels)
@@ -997,19 +998,9 @@
       return Number.isFinite(n) ? n : s;
     }
 
-    function formatINR(n){
-      const num = Number(n) || 0;
-      return '₹' + num.toLocaleString('en-IN');
-    }
-
-    function escapeHtml(str){
-      return String(str)
-        .replaceAll('&','&amp;')
-        .replaceAll('<','<')
-        .replaceAll('>','>')
-        .replaceAll('"','"')
-        .replaceAll("'",'&#039;');
-    }
+    // Shared helpers (js/nh-utils.js)
+    const formatINR = NH.formatINR;
+    const escapeHtml = NH.escapeHtml;
 
     // =============================
     // REGEX PARSING ENGINE (FIXED)
@@ -1636,46 +1627,13 @@
     // INVENTORY CRUD (Dynamic Inventory) - Unified IndexedDB
     // =============================
 
-    const DB_NAME = 'NutritionHaveliDB';
-    const DB_VERSION = 1;
-    const STORE_NAME = 'products';
+    // DB name/version/store and open + read helpers are shared (js/nh-utils.js)
+    const DB_NAME = NH.DB_NAME;
+    const DB_VERSION = NH.DB_VERSION;
+    const STORE_NAME = NH.STORE_NAME;
 
-    function openNutritionHaveliDB(){
-      return new Promise((resolve, reject) => {
-        try{
-          const req = indexedDB.open(DB_NAME, DB_VERSION);
-          req.onupgradeneeded = function(e){
-            const db = e.target.result;
-            if(!db.objectStoreNames.contains(STORE_NAME)){
-              db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-            }
-          };
-          req.onsuccess = function(){
-            resolve(req.result);
-          };
-          req.onerror = function(){
-            reject(req.error || new Error('Failed to open NutritionHaveliDB'));
-          };
-        } catch(err){
-          reject(err);
-        }
-      });
-    }
-
-
-    function idbGetAllProducts(db){
-      return new Promise((resolve, reject) => {
-        try{
-          const tx = db.transaction([STORE_NAME], 'readonly');
-          const store = tx.objectStore(STORE_NAME);
-          const req = store.getAll();
-          req.onsuccess = () => resolve(Array.isArray(req.result) ? req.result : []);
-          req.onerror = () => reject(req.error || new Error('Failed to fetch products'));
-        } catch(err){
-          reject(err);
-        }
-      });
-    }
+    const openNutritionHaveliDB = NH.openProductsDB;
+    const idbGetAllProducts = NH.getAllProducts;
 
     function idbPutProduct(db, product){
       return new Promise((resolve, reject) => {
