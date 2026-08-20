@@ -1,0 +1,33 @@
+{
+  "name": "nutrition-haveli",
+  "version": "1.0.0",
+  "description": "Nutrition Haveli website (frontend + backend) and test suite",
+  "scripts": {
+    "test": "jest",
+    "test:coverage": "jest --coverage"
+  },
+  "keywords": [
+    "nutrition-haveli",
+    "fitness-supplements"
+  ],
+  "author": "Nutrition Haveli",
+  "license": "ISC",
+  "devDependencies": {
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "supertest": "^6.3.4"
+  },
+  "jest": {
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "collectCoverageFrom": [
+      "backend/server.js",
+      "js/main.js"
+    ],
+    "coverageDirectory": "coverage"
+  }
+}
